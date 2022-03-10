@@ -18,10 +18,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Use DCEC for clustering')
     parser.add_argument('--dataset_path', default='./', type=str)
     parser.add_argument('--dataframe_path', default='./', type=str)
+    parser.add_argument('--output_path', default='./', type=str)
 
     args = parser.parse_args()
     df = args.dataframe_path
     root_dir = args.dataset_path
+    output_path = args.output_path
 
     batch_size = 16
     learning_rate = 0.0000001
@@ -41,4 +43,4 @@ if __name__ == "__main__":
         weight_decay=1e-6,
     )
 
-    train(model, dataloader, 1, criterion, optimizer, "./")
+    train(model, dataloader, 1, criterion, optimizer, output_path)
