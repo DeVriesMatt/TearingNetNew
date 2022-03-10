@@ -1,6 +1,5 @@
 import torch
 from torch.utils.data import DataLoader
-from chamferdist import ChamferDistance
 from training_functions import train
 from encoders.dgcnn import ChamferLoss
 from dataset import PointCloudDatasetAllBoth
