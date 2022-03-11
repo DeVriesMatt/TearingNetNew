@@ -18,11 +18,13 @@ if __name__ == "__main__":
     parser.add_argument('--dataset_path', default='./', type=str)
     parser.add_argument('--dataframe_path', default='./', type=str)
     parser.add_argument('--output_path', default='./', type=str)
+    parser.add_argument('--num_epochs', default=250, type=int)
 
     args = parser.parse_args()
     df = args.dataframe_path
     root_dir = args.dataset_path
     output_path = args.output_path
+    num_epochs = args.num_epochs
 
     batch_size = 16
     learning_rate = 0.0000001
@@ -42,4 +44,4 @@ if __name__ == "__main__":
         weight_decay=1e-6,
     )
 
-    train(model, dataloader, 1, criterion, optimizer, output_path)
+    train(model, dataloader, num_epochs, criterion, optimizer, output_path)
