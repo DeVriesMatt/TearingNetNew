@@ -33,24 +33,15 @@ if __name__ == "__main__":
     root_dir = args.dataset_path
     output_path = args.output_path
     num_epochs = args.num_epochs
-    fldg_path = args.fldg_path
+    fold_path = args.fold_path
     dgcnn_path = args.dgcnn_path
 
-    checkpoint = torch.load(dgcnn_path)
+    checkpoint = torch.load(fold_path)
     batch_size = 16
     learning_rate = 0.0000001
 
     model = GraphAutoEncoder(num_features=50, k=20, encoder_type="dgcnn", decoder_type='foldingnet')
-    # print(checkpoint['model_state_dict'])
-    model_dict = model.state_dict()  # load parameters from pre-trained dgcnn
-    for k in checkpoint['model_state_dict']:
-        if 'encoder' in k:
-            if k in model_dict:
-                model_dict[k] = checkpoint['model_state_dict'][k]
-                print("    Found weight: " + k)
-        else:
-            continue
-    model.load_state_dict(model_dict)
+    model.load_state_dict(checkpoint['model_state_dict'])
 
     dataset = PointCloudDatasetAllBoth(df, root_dir)
 
