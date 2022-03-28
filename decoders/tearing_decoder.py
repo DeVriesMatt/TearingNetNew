@@ -48,7 +48,7 @@ class TearingNetDecoder(nn.Module):
         grid1 = self.tearing(x.squeeze(1), grid0, pc0)  # Tearing Network
         pc1 = self.folding(x, grid1)  # Folding Network
         pc2, graph_wght = self.graph_filter(grid1, pc1)  # Graph Filtering
-        return pc0, pc1, pc2, grid1, graph_wght
+        return pc2, (grid1, graph_wght, pc0, pc1)
 
 
 if __name__ == "__main__":

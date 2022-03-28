@@ -37,7 +37,7 @@ class FoldingNetBasicDecoder(nn.Module):
 
         grid = self.grid.cuda().unsqueeze(0).expand(x.shape[0], -1, -1)
         outputs = self.folding(x, grid)
-        return outputs
+        return outputs, grid
 
 
 if __name__ == "__main__":

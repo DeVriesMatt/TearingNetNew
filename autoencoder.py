@@ -45,5 +45,5 @@ class GraphAutoEncoder(nn.Module):
 
     def forward(self, x):
         features = self.encoder(x)
-        output = self.decoder(x=features)
+        output, _ = self.decoder(x=features)
         return output, features
