@@ -21,7 +21,7 @@ if __name__ == "__main__":
                         type=str)
     parser.add_argument('--output_path', default='./', type=str)
     parser.add_argument('--num_epochs', default=250, type=int)
-    parser.add_argument('--fldg_path',
+    parser.add_argument('--fold_path',
                         default='/run/user/1128299809/gvfs/smb-share:server=rds.icr.ac.uk,share=data/DBI/DUDBI/DYNCESYS/mvries/ResultsAlma/TearingNetNew/nets/dgcnn_foldingnet_50_002.pt',
                         type=str)
     parser.add_argument('--dgcnn_path',
