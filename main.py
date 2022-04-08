@@ -42,7 +42,6 @@ if __name__ == "__main__":
 
     model = GraphAutoEncoder(num_features=50, k=20, encoder_type="dgcnn", decoder_type='foldingnet')
     model.load_state_dict(checkpoint['model_state_dict'])
-
     dataset = PointCloudDatasetAllBoth(df, root_dir)
 
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)

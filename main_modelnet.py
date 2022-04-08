@@ -6,6 +6,13 @@ from dataset import PointCloudDatasetAllBoth
 from autoencoder import GraphAutoEncoder
 from chamfer import ChamferLoss1
 import argparse
+from modelnet_dataset import MN_Dataset
+import os
+
+
+def create_dir_if_not_exist(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
 
 
 if __name__ == "__main__":
@@ -14,8 +21,8 @@ if __name__ == "__main__":
     # )
     # df = "/home/mvries/Documents/Datasets/OPM/SingleCellFromNathan_17122021/all_cell_data.csv"
     # root_dir = "/home/mvries/Documents/Datasets/OPM/SingleCellFromNathan_17122021/"
-    parser = argparse.ArgumentParser(description='DGCNN + Tearing')
-    parser.add_argument('--dataset_path', default='/home/mvries/Documents/Datasets/OPM/SingleCellFromNathan_17122021/', type=str)
+    parser = argparse.ArgumentParser(description='DGCNN + Folding')
+    parser.add_argument('--dataset_path', default='/home/mvries/Documents/Datasets/', type=str)
     parser.add_argument('--dataframe_path',
                         default='/home/mvries/Documents/Datasets/OPM/SingleCellFromNathan_17122021/all_cell_data.csv',
                         type=str)
@@ -24,6 +31,9 @@ if __name__ == "__main__":
     parser.add_argument('--fold_path',
                         default='/run/user/1128299809/gvfs/smb-share:server=rds.icr.ac.uk,share=data/DBI/DUDBI/DYNCESYS/mvries/ResultsAlma/TearingNetNew/nets/dgcnn_foldingnet_50_002.pt',
                         type=str)
+    parser.add_argument('--dgcnn_path',
+                        default='/home/mvries/Documents/GitHub/FoldingNetNew/nets/FoldingNetNew_50feats_planeshape_foldingdecoder_trainallTrue_centringonlyTrue_train_bothTrue_003.pt',
+                        type=str)
 
     args = parser.parse_args()
     df = args.dataframe_path
@@ -31,25 +41,29 @@ if __name__ == "__main__":
     output_path = args.output_path
     num_epochs = args.num_epochs
     fold_path = args.fold_path
+    dgcnn_path = args.dgcnn_path
+    create_dir_if_not_exist(output_path)
 
+    checkpoint = torch.load(fold_path)
     batch_size = 16
     learning_rate = 0.0000001
-    fold = GraphAutoEncoder(num_features=50, k=20, encoder_type="dgcnn", decoder_type='foldingnet')
-    checkpoint = torch.load(fold_path)
-    model = GraphAutoEncoder(num_features=50, k=20, encoder_type="dgcnn", decoder_type='tearingnet')
-    print(model)
-    # print(checkpoint['model_state_dict'])
-    model_dict = model.state_dict()  # load parameters from pre-trained FoldingNet
-    for k in checkpoint['model_state_dict']:
-        if k in model_dict:
-            model_dict[k] = checkpoint['model_state_dict'][k]
-            print("    Found weight: " + k)
-        elif k.replace('folding1', 'folding') in model_dict:
-            model_dict[k.replace('folding1', 'folding')] = checkpoint['model_state_dict'][k]
-            print("    Found weight: " + k)
-    model.load_state_dict(model_dict)
-    dataset = PointCloudDatasetAllBoth(df, root_dir)
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+
+    model = GraphAutoEncoder(num_features=50, k=20, encoder_type="dgcnn", decoder_type='foldingnet')
+    model.load_state_dict(checkpoint['model_state_dict'])
+    train_dataset = MN_Dataset(
+        root=root_dir,
+        dataset_name='shapenetcorev2',
+        split='all',
+        num_points=2048,
+        random_translate=True,
+        random_rotate=True,
+        random_jitter=True
+    )
+    dataloader = torch.utils.data.DataLoader(
+        train_dataset,
+        batch_size=batch_size,
+        shuffle=True,
+    )
 
     criterion = ChamferLoss()
 
