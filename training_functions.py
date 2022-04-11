@@ -5,6 +5,7 @@ from torch.utils.tensorboard import SummaryWriter
 from datetime import datetime
 from reporting import get_experiment_name
 
+
 def latent_loss(mu, log_var):
     kld_loss = torch.mean(-0.5 * torch.sum(1 + log_var - mu ** 2 - log_var.exp(), dim=1), dim=0)
     return kld_loss

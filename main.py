@@ -27,6 +27,9 @@ if __name__ == "__main__":
     parser.add_argument('--dgcnn_path',
                         default='/home/mvries/Documents/GitHub/FoldingNetNew/nets/FoldingNetNew_50feats_planeshape_foldingdecoder_trainallTrue_centringonlyTrue_train_bothTrue_003.pt',
                         type=str)
+    parser.add_argument('--num_features',
+                        default=50,
+                        type=int)
 
     args = parser.parse_args()
     df = args.dataframe_path
@@ -35,12 +38,13 @@ if __name__ == "__main__":
     num_epochs = args.num_epochs
     fold_path = args.fold_path
     dgcnn_path = args.dgcnn_path
+    num_features = args.num_features
 
     checkpoint = torch.load(fold_path)
     batch_size = 16
     learning_rate = 0.00000001
 
-    model = GraphAutoEncoder(num_features=50, k=20, encoder_type="dgcnn", decoder_type='foldingnet')
+    model = GraphAutoEncoder(num_features=num_features, k=20, encoder_type="dgcnn", decoder_type='foldingnet')
     model.load_state_dict(checkpoint['model_state_dict'])
     print(checkpoint['loss'])
     dataset = PointCloudDatasetAllBoth(df, root_dir)
