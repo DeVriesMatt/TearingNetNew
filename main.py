@@ -42,7 +42,7 @@ if __name__ == "__main__":
 
     checkpoint = torch.load(fold_path)
     batch_size = 16
-    learning_rate = 0.00000001
+    learning_rate = 0.00001
 
     model = GraphAutoEncoder(num_features=num_features, k=20, encoder_type="dgcnn", decoder_type='foldingnet')
     # model.load_state_dict(checkpoint['model_state_dict'])
