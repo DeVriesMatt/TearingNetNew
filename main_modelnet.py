@@ -32,8 +32,21 @@ if __name__ == "__main__":
                         default='/run/user/1128299809/gvfs/smb-share:server=rds.icr.ac.uk,share=data/DBI/DUDBI/DYNCESYS/mvries/ResultsAlma/TearingNetNew/nets/dgcnn_foldingnet_50_002.pt',
                         type=str)
     parser.add_argument('--dgcnn_path',
-                        default='/home/mvries/Documents/GitHub/FoldingNetNew/nets/FoldingNetNew_50feats_planeshape_foldingdecoder_trainallTrue_centringonlyTrue_train_bothTrue_003.pt',
+                        default='/run/user/1128299809/gvfs/smb-share:server=rds.icr.ac.uk,share=data/DBI/DUDBI/DYNCESYS/mvries/Reconstruct_dgcnn_cls_k20_plane/models/shapenetcorev2_250.pkl',
                         type=str)
+    parser.add_argument('--num_features',
+                        default=50,
+                        type=int)
+    parser.add_argument('--k',
+                        default=20,
+                        type=int)
+    parser.add_argument('--encoder_type',
+                        default="dgcnn",
+                        type=str)
+    parser.add_argument('--decoder_type',
+                        default="foldingnet",
+                        type=str)
+
 
     args = parser.parse_args()
     df = args.dataframe_path
@@ -43,13 +56,30 @@ if __name__ == "__main__":
     fold_path = args.fold_path
     dgcnn_path = args.dgcnn_path
     create_dir_if_not_exist(output_path)
+    num_features = args.num_features
+    k = args.k
+    encoder_type = args.encoder_type
+    decoder_type = args.decoder_type
 
-    checkpoint = torch.load(fold_path)
+    checkpoint = torch.load(dgcnn_path, map_location='cpu')
     batch_size = 16
-    learning_rate = 0.0000001
+    learning_rate = 0.0001
 
-    model = GraphAutoEncoder(num_features=50, k=20, encoder_type="dgcnn", decoder_type='foldingnet')
-    model.load_state_dict(checkpoint['model_state_dict'])
+    model = GraphAutoEncoder(num_features=num_features,
+                             k=k,
+                             encoder_type=encoder_type,
+                             decoder_type=decoder_type)
+
+    model_dict = model.state_dict()  # load parameters from pre-trained FoldingNet
+    for k in checkpoint:
+        if k in model_dict:
+            model_dict[k] = checkpoint[k]
+            print("    Found weight: " + k)
+        elif k.replace('folding1', 'folding') in model_dict:
+            model_dict[k.replace('folding1', 'folding')] = checkpoint[k]
+            print("    Found weight: " + k)
+    model.load_state_dict(model_dict)
+
     train_dataset = MN_Dataset(
         root=root_dir,
         dataset_name='shapenetcorev2',

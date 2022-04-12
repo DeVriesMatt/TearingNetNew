@@ -45,7 +45,16 @@ if __name__ == "__main__":
     learning_rate = 0.00000001
 
     model = GraphAutoEncoder(num_features=num_features, k=20, encoder_type="dgcnn", decoder_type='foldingnet')
-    model.load_state_dict(checkpoint['model_state_dict'])
+    # model.load_state_dict(checkpoint['model_state_dict'])
+    model_dict = model.state_dict()  # load parameters from pre-trained FoldingNet
+    for k in checkpoint['model_state_dict']:
+        if k in model_dict:
+            model_dict[k] = checkpoint['model_state_dict'][k]
+            print("    Found weight: " + k)
+        elif k.replace('folding1', 'folding') in model_dict:
+            model_dict[k.replace('folding1', 'folding')] = checkpoint['model_state_dict'][k]
+            print("    Found weight: " + k)
+    model.load_state_dict(model_dict)
     print(checkpoint['loss'])
     dataset = PointCloudDatasetAllBoth(df, root_dir)
 
