@@ -46,7 +46,12 @@ if __name__ == "__main__":
     parser.add_argument('--decoder_type',
                         default="foldingnet",
                         type=str)
-
+    parser.add_argument('--learning_rate',
+                        default=0.00001,
+                        type=float)
+    parser.add_argument('--batch_size',
+                        default=16,
+                        type=int)
 
     args = parser.parse_args()
     df = args.dataframe_path
@@ -60,10 +65,10 @@ if __name__ == "__main__":
     k = args.k
     encoder_type = args.encoder_type
     decoder_type = args.decoder_type
+    learning_rate = args.learning_rate
+    batch_size = args.batch_size
 
     checkpoint = torch.load(fold_path, map_location='cpu')
-    batch_size = 16
-    learning_rate = 0.00001
 
     model = GraphAutoEncoder(num_features=num_features,
                              k=k,
