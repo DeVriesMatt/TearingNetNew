@@ -36,7 +36,7 @@ class GraphAutoEncoder(nn.Module):
 
         if self.decoder_type == 'foldingnet':
             self.decoder = FoldingNetBasicDecoder(
-                num_features=self.num_features, num_clusters=10
+                num_features=self.num_features, num_clusters=5
             )
         else:
             self.decoder = TearingNetDecoder(

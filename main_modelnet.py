@@ -29,13 +29,13 @@ if __name__ == "__main__":
     parser.add_argument('--output_path', default='./', type=str)
     parser.add_argument('--num_epochs', default=250, type=int)
     parser.add_argument('--fold_path',
-                        default='/run/user/1128299809/gvfs/smb-share:server=rds.icr.ac.uk,share=data/DBI/DUDBI/DYNCESYS/mvries/ResultsAlma/TearingNetNew/nets/dgcnn_foldingnet_50_002.pt',
+                        default='/run/user/1128299809/gvfs/smb-share:server=rds.icr.ac.uk,share=data/DBI/DUDBI/DYNCESYS/mvries/ResultsAlma/TearingNetNew/shapenet/nets/dgcnn_foldingnet_128_001.pt',
                         type=str)
     parser.add_argument('--dgcnn_path',
                         default='/run/user/1128299809/gvfs/smb-share:server=rds.icr.ac.uk,share=data/DBI/DUDBI/DYNCESYS/mvries/Reconstruct_dgcnn_cls_k20_plane/models/shapenetcorev2_250.pkl',
                         type=str)
     parser.add_argument('--num_features',
-                        default=50,
+                        default=128,
                         type=int)
     parser.add_argument('--k',
                         default=20,
@@ -61,9 +61,9 @@ if __name__ == "__main__":
     encoder_type = args.encoder_type
     decoder_type = args.decoder_type
 
-    checkpoint = torch.load(dgcnn_path, map_location='cpu')
+    checkpoint = torch.load(fold_path, map_location='cpu')
     batch_size = 16
-    learning_rate = 0.0001
+    learning_rate = 0.00001
 
     model = GraphAutoEncoder(num_features=num_features,
                              k=k,
@@ -71,9 +71,9 @@ if __name__ == "__main__":
                              decoder_type=decoder_type)
 
     model_dict = model.state_dict()  # load parameters from pre-trained FoldingNet
-    for k in checkpoint:
+    for k in checkpoint['model_state_dict']:
         if k in model_dict:
-            model_dict[k] = checkpoint[k]
+            model_dict[k] = checkpoint['model_state_dict'][k]
             print("    Found weight: " + k)
         elif k.replace('folding1', 'folding') in model_dict:
             model_dict[k.replace('folding1', 'folding')] = checkpoint[k]

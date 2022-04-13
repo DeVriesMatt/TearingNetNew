@@ -4,6 +4,7 @@ import logging
 from torch.utils.tensorboard import SummaryWriter
 from datetime import datetime
 from reporting import get_experiment_name
+from torch import optim
 
 
 def latent_loss(mu, log_var):
@@ -15,6 +16,7 @@ def train(model, dataloader, num_epochs, criterion, optimizer, output_dir):
     name_logging, name_model, name_writer, name = get_experiment_name(
         model=model, output_dir=output_dir
     )
+    scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.5)
 
     now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     logging.basicConfig(filename=name_logging, level=logging.INFO)
@@ -73,6 +75,7 @@ def train(model, dataloader, num_epochs, criterion, optimizer, output_dir):
                 torch.save(checkpoint, name_model)
                 logging.info(f"Saving model to {name_model} with loss = {best_loss}.")
 
+        scheduler.step()
 
 def train_vae(model, dataloader, num_epochs, criterion, optimizer, output_dir):
 

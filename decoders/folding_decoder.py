@@ -13,7 +13,6 @@ class FoldingNetBasicDecoder(nn.Module):
         self.num_features = num_features
         self.num_cluster = num_clusters
         if self.num_features < self.lin_features_len:
-            self.embedding = nn.Linear(self.lin_features_len, num_clusters, bias=False)
             self.deembedding = nn.Linear(
                 self.num_features, self.lin_features_len, bias=False
             )

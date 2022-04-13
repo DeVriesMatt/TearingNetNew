@@ -40,7 +40,7 @@ if __name__ == "__main__":
     dgcnn_path = args.dgcnn_path
     num_features = args.num_features
 
-    checkpoint = torch.load(fold_path)
+    checkpoint = torch.load(dgcnn_path)
     batch_size = 16
     learning_rate = 0.00001
 
