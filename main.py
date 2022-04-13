@@ -6,6 +6,12 @@ from dataset import PointCloudDatasetAllBoth
 from autoencoder import GraphAutoEncoder
 from chamfer import ChamferLoss1
 import argparse
+import os
+
+
+def create_dir_if_not_exist(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
 
 
 if __name__ == "__main__":
@@ -22,13 +28,28 @@ if __name__ == "__main__":
     parser.add_argument('--output_path', default='./', type=str)
     parser.add_argument('--num_epochs', default=250, type=int)
     parser.add_argument('--fold_path',
-                        default='/run/user/1128299809/gvfs/smb-share:server=rds.icr.ac.uk,share=data/DBI/DUDBI/DYNCESYS/mvries/ResultsAlma/TearingNetNew/nets/dgcnn_foldingnet_50_003.pt',
+                        default='/run/user/1128299809/gvfs/smb-share:server=rds.icr.ac.uk,share=data/DBI/DUDBI/DYNCESYS/mvries/ResultsAlma/TearingNetNew/shapenet/nets/dgcnn_foldingnet_128_001.pt',
                         type=str)
     parser.add_argument('--dgcnn_path',
-                        default='/home/mvries/Documents/GitHub/FoldingNetNew/nets/FoldingNetNew_50feats_planeshape_foldingdecoder_trainallTrue_centringonlyTrue_train_bothTrue_003.pt',
+                        default='/run/user/1128299809/gvfs/smb-share:server=rds.icr.ac.uk,share=data/DBI/DUDBI/DYNCESYS/mvries/Reconstruct_dgcnn_cls_k20_plane/models/shapenetcorev2_250.pkl',
                         type=str)
     parser.add_argument('--num_features',
-                        default=50,
+                        default=128,
+                        type=int)
+    parser.add_argument('--k',
+                        default=20,
+                        type=int)
+    parser.add_argument('--encoder_type',
+                        default="dgcnn",
+                        type=str)
+    parser.add_argument('--decoder_type',
+                        default="foldingnet",
+                        type=str)
+    parser.add_argument('--learning_rate',
+                        default=0.00001,
+                        type=float)
+    parser.add_argument('--batch_size',
+                        default=16,
                         type=int)
 
     args = parser.parse_args()
@@ -38,11 +59,15 @@ if __name__ == "__main__":
     num_epochs = args.num_epochs
     fold_path = args.fold_path
     dgcnn_path = args.dgcnn_path
+    create_dir_if_not_exist(output_path)
     num_features = args.num_features
+    k = args.k
+    encoder_type = args.encoder_type
+    decoder_type = args.decoder_type
+    learning_rate = args.learning_rate
+    batch_size = args.batch_size
 
-    checkpoint = torch.load(dgcnn_path)
-    batch_size = 16
-    learning_rate = 0.00001
+    checkpoint = torch.load(fold_path)
 
     model = GraphAutoEncoder(num_features=num_features, k=20, encoder_type="dgcnn", decoder_type='foldingnet')
     # model.load_state_dict(checkpoint['model_state_dict'])
@@ -56,6 +81,7 @@ if __name__ == "__main__":
             print("    Found weight: " + k)
     model.load_state_dict(model_dict)
     print(checkpoint['loss'])
+
     dataset = PointCloudDatasetAllBoth(df, root_dir)
 
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
