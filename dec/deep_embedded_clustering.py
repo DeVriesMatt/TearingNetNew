@@ -16,7 +16,7 @@ class DEC(nn.Module):
         self.num_clusters = num_clusters
         self.num_features = autoencoder.num_features
         self.encoder_type = autoencoder.encoder_type
-        self.decoder_type = autoencoder.decoder_type + "DEC"
+        self.decoder_type = autoencoder.decoder_type
 
         self.clustering_layer = ClusterlingLayer(self.num_features, self.num_clusters)
 

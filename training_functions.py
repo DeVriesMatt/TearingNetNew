@@ -75,7 +75,7 @@ def train(model, dataloader, num_epochs, criterion, optimizer, output_dir):
                 torch.save(checkpoint, name_model)
                 logging.info(f"Saving model to {name_model} with loss = {best_loss}.")
 
-        scheduler.step()
+        # scheduler.step()
 
 def train_vae(model, dataloader, num_epochs, criterion, optimizer, output_dir):
 

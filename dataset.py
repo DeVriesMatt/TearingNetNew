@@ -68,7 +68,7 @@ class PointCloudDatasetAll(Dataset):
         self,
         annotations_file,
         img_dir,
-        img_size=64,
+        img_size=400,
         label_col="Treatment",
         transform=None,
         target_transform=None,
@@ -128,7 +128,7 @@ class PointCloudDatasetAll(Dataset):
 
         serial_number = self.new_df.loc[idx, "serialNumber"]
 
-        return image, label, feats, serial_number
+        return image, treatment, feats, serial_number
 
 
 class PointCloudDatasetAllBoth(Dataset):

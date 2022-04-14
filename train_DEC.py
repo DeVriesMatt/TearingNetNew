@@ -42,14 +42,23 @@ def train_DEC_func(autoencoder,
     :param batch_size:
     :return:
     """
-
+    autoencoder.decoder_type = autoencoder.decoder_type + "DEC"
+    name_logging, name_model, name_writer, name = get_experiment_name(
+        model=autoencoder, output_dir=output_dir
+    )
+    now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    logging.basicConfig(filename=name_logging, level=logging.INFO)
+    logging.info(f"Started training model {name} at {now}.")
+    writer = SummaryWriter(log_dir=name_writer)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     autoencoder.to(device)
+
     # Step 1: initialise cluster centres
+    print("Initialising cluster centres and deciding the model")
+    logging.info("Initialising cluster centres and returning the model")
+
     model = initialise_cluster_centres(autoencoder=autoencoder, dataloader_ind=dataloader_ind, device=device)
-    name_logging, name_model, name_writer, name = get_experiment_name(
-        model=model, output_dir=output_dir
-    )
+    model.to(device)
     optimizer = torch.optim.Adam(
         model.parameters(),
         lr=learning_rate * 16 / batch_size,
@@ -59,20 +68,17 @@ def train_DEC_func(autoencoder,
     scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.5)
 
     # Initialise q distribution and p distribution
+    logging.info("Initialising q and p distributions")
     q_distribution, previous_predictions = calculate_q_distribution(model=model,
                                                                     dataloader_ind=dataloader_ind,
                                                                     device=device)
     p_distribution = calculate_p_distribution(q_distribution=q_distribution)
 
-
-    now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-    logging.basicConfig(filename=name_logging, level=logging.INFO)
-    logging.info(f"Started training model {name} at {now}.")
-    writer = SummaryWriter(log_dir=name_writer)
     model.to(device)
     model.train()
     best_loss = 1000000000
     niter = 1
+    logging.info("Starting training")
     for epoch in range(num_epochs):
         batch_num = 1
         running_loss = 0.0
@@ -84,6 +90,7 @@ def train_DEC_func(autoencoder,
             delta_label, previous_predictions = check_tolerance(
                 predictions, previous_predictions
             )
+            logging.info(f"Delta label == {delta_label}")
             if delta_label < divergence_tolerance:
                 print(
                     f"Label divergence {delta_label} < "
@@ -150,7 +157,7 @@ def train_DEC_func(autoencoder,
                 torch.save(checkpoint, name_model)
                 logging.info(f"Saving model to {name_model} with loss = {best_loss}.")
 
-        scheduler.step()
+        # scheduler.step()
 
 
 def initialise_cluster_centres(autoencoder, dataloader_ind, device):
@@ -167,9 +174,7 @@ def initialise_cluster_centres(autoencoder, dataloader_ind, device):
     """
     features_all = []
     autoencoder.eval()
-    logging.info(
-        "Initialising cluster centers"
-    )
+
     with tqdm(dataloader_ind, unit="data") as tepoch:
         for data in tepoch:
             with torch.no_grad():
@@ -198,7 +203,6 @@ def initialise_cluster_centres(autoencoder, dataloader_ind, device):
     model = DEC(autoencoder=autoencoder, num_clusters=number_clusters)
     del autoencoder
     model.clustering_layer.set_weight(weights)
-    model.to(device)
 
     return model
 
