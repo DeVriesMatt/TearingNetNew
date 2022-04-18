@@ -83,6 +83,7 @@ def train_DEC_func(autoencoder,
         batch_num = 1
         running_loss = 0.0
         if (epoch % update_interval == 0) and (epoch != 0):
+            logging.info(f"Updating target distribution")
             q_distribution, predictions = calculate_q_distribution(model=model,
                                                                    dataloader_ind=dataloader_ind,
                                                                    device=device)

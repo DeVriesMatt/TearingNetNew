@@ -3,7 +3,7 @@ from torch import nn
 from torch.utils.data import DataLoader
 from training_functions import train
 from encoders.dgcnn import ChamferLoss
-from dataset import PointCloudDatasetAllBoth
+from dataset import PointCloudDatasetAllBoth, PointCloudDatasetAll
 from autoencoder import GraphAutoEncoder
 from chamfer import ChamferLoss1
 import argparse
@@ -95,7 +95,7 @@ if __name__ == "__main__":
     ae.load_state_dict(model_dict)
     print(checkpoint['loss'])
 
-    dataset = PointCloudDatasetAllBoth(df, root_dir)
+    dataset = PointCloudDatasetAll(df, root_dir)
 
     # TODO: Imperative that shuffle=False
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
