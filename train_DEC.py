@@ -23,7 +23,8 @@ def train_DEC_func(autoencoder,
                    divergence_tolerance,
                    gamma,
                    learning_rate,
-                   batch_size):
+                   batch_size,
+                   proximal):
     """
     Training for deep embedded clustering.
     Step 1: Initialise cluster centres
@@ -40,15 +41,25 @@ def train_DEC_func(autoencoder,
     :param gamma:
     :param learning_rate:
     :param batch_size:
+    :param proximal:
     :return:
     """
-    autoencoder.decoder_type = autoencoder.decoder_type + "DEC"
+    if proximal == 0:
+        prox = 'Distal'
+    elif proximal == 1:
+        prox = 'Proximal'
+    else:
+        prox = 'All'
+    autoencoder.decoder_type = autoencoder.decoder_type + "DEC" + prox
     name_logging, name_model, name_writer, name = get_experiment_name(
         model=autoencoder, output_dir=output_dir
     )
     now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     logging.basicConfig(filename=name_logging, level=logging.INFO)
     logging.info(f"Started training model {name} at {now}.")
+
+
+    logging.info(f"Training on {prox} data")
     writer = SummaryWriter(log_dir=name_writer)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     autoencoder.to(device)

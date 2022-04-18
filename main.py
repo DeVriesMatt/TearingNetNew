@@ -51,6 +51,9 @@ if __name__ == "__main__":
     parser.add_argument('--batch_size',
                         default=16,
                         type=int)
+    parser.add_argument('--proximal',
+                        default=0,
+                        type=int)
 
     args = parser.parse_args()
     df = args.dataframe_path
@@ -66,6 +69,7 @@ if __name__ == "__main__":
     decoder_type = args.decoder_type
     learning_rate = args.learning_rate
     batch_size = args.batch_size
+
 
     model = GraphAutoEncoder(num_features=num_features, k=20, encoder_type=encoder_type, decoder_type=decoder_type)
     # model.load_state_dict(checkpoint['model_state_dict'])
