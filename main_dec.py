@@ -3,7 +3,10 @@ from torch import nn
 from torch.utils.data import DataLoader
 from training_functions import train
 from encoders.dgcnn import ChamferLoss
-from dataset import PointCloudDatasetAllBoth, PointCloudDatasetAll
+from dataset import PointCloudDatasetAllBoth, \
+    PointCloudDatasetAll, \
+    PointCloudDatasetAllDistal, \
+    PointCloudDatasetAllProximal
 from autoencoder import GraphAutoEncoder
 from chamfer import ChamferLoss1
 import argparse

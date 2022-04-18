@@ -131,6 +131,144 @@ class PointCloudDatasetAll(Dataset):
         return image, treatment, feats, serial_number
 
 
+class PointCloudDatasetAllDistal(Dataset):
+    def __init__(
+        self,
+        annotations_file,
+        img_dir,
+        img_size=400,
+        label_col="Treatment",
+        transform=None,
+        target_transform=None,
+        cell_component="cell",
+    ):
+        self.annot_df = pd.read_csv(annotations_file)
+        self.img_dir = img_dir
+        self.img_size = img_size
+        self.label_col = label_col
+        self.transform = transform
+        self.target_transform = target_transform
+        self.cell_component = cell_component
+
+        self.new_df = self.annot_df[
+            (self.annot_df.xDim <= self.img_size)
+            & (self.annot_df.yDim <= self.img_size)
+            & (self.annot_df.zDim <= self.img_size)
+            & (self.annot_df.Proximal == 0)
+        ].reset_index(drop=True)
+
+        # encode label
+        le = LabelEncoder()
+        label_col_enc = self.new_df.loc[:, self.label_col]
+        label_col_enc = le.fit_transform(label_col_enc)
+        self.new_df["label_col_enc"] = label_col_enc
+
+    def __len__(self):
+        return len(self.new_df)
+
+    def __getitem__(self, idx):
+        # read the image
+        treatment = self.new_df.loc[idx, "Treatment"]
+        plate_num = "Plate" + str(self.new_df.loc[idx, "PlateNumber"])
+        if self.cell_component == "cell":
+            component_path = "stacked_pointcloud"
+        else:
+            component_path = "stacked_pointcloud_nucleus"
+
+        img_path = os.path.join(
+            self.img_dir,
+            plate_num,
+            component_path,
+            treatment,
+            self.new_df.loc[idx, "serialNumber"],
+        )
+        image = PyntCloud.from_file(img_path + ".ply")
+        image = torch.tensor(image.points.values)
+        mean = torch.mean(image, 0)
+        std = torch.tensor([[20., 20., 20.]])
+        image = (image - mean) / std
+        # return encoded label as tensor
+        label = self.new_df.loc[idx, "label_col_enc"]
+        label = torch.tensor(label)
+
+        # return the classical features as torch tensor
+        feats = self.new_df.iloc[idx, 16:-4]
+        feats = torch.tensor(feats)
+
+        serial_number = self.new_df.loc[idx, "serialNumber"]
+
+        return image, treatment, feats, serial_number
+
+
+class PointCloudDatasetAllProximal(Dataset):
+    def __init__(
+        self,
+        annotations_file,
+        img_dir,
+        img_size=400,
+        label_col="Treatment",
+        transform=None,
+        target_transform=None,
+        cell_component="cell",
+    ):
+        self.annot_df = pd.read_csv(annotations_file)
+        self.img_dir = img_dir
+        self.img_size = img_size
+        self.label_col = label_col
+        self.transform = transform
+        self.target_transform = target_transform
+        self.cell_component = cell_component
+
+        self.new_df = self.annot_df[
+            (self.annot_df.xDim <= self.img_size)
+            & (self.annot_df.yDim <= self.img_size)
+            & (self.annot_df.zDim <= self.img_size)
+            & (self.annot_df.Proximal == 1)
+        ].reset_index(drop=True)
+
+        # encode label
+        le = LabelEncoder()
+        label_col_enc = self.new_df.loc[:, self.label_col]
+        label_col_enc = le.fit_transform(label_col_enc)
+        self.new_df["label_col_enc"] = label_col_enc
+
+    def __len__(self):
+        return len(self.new_df)
+
+    def __getitem__(self, idx):
+        # read the image
+        treatment = self.new_df.loc[idx, "Treatment"]
+        plate_num = "Plate" + str(self.new_df.loc[idx, "PlateNumber"])
+        if self.cell_component == "cell":
+            component_path = "stacked_pointcloud"
+        else:
+            component_path = "stacked_pointcloud_nucleus"
+
+        img_path = os.path.join(
+            self.img_dir,
+            plate_num,
+            component_path,
+            treatment,
+            self.new_df.loc[idx, "serialNumber"],
+        )
+        image = PyntCloud.from_file(img_path + ".ply")
+        image = torch.tensor(image.points.values)
+        mean = torch.mean(image, 0)
+        std = torch.tensor([[20., 20., 20.]])
+        image = (image - mean) / std
+        # return encoded label as tensor
+        label = self.new_df.loc[idx, "label_col_enc"]
+        label = torch.tensor(label)
+
+        # return the classical features as torch tensor
+        feats = self.new_df.iloc[idx, 16:-4]
+        feats = torch.tensor(feats)
+
+        serial_number = self.new_df.loc[idx, "serialNumber"]
+
+        return image, treatment, feats, serial_number
+
+
 class PointCloudDatasetAllBoth(Dataset):
     def __init__(self, annotations_file,
                  img_dir,
