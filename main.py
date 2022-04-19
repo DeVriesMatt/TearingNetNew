@@ -2,7 +2,7 @@ import torch
 from torch.utils.data import DataLoader
 from training_functions import train
 from encoders.dgcnn import ChamferLoss
-from dataset import PointCloudDatasetAllBoth
+from dataset import PointCloudDatasetAllBoth, PointCloudDatasetAllRotation
 from autoencoder import GraphAutoEncoder
 from chamfer import ChamferLoss1
 import argparse
@@ -85,7 +85,7 @@ if __name__ == "__main__":
     model.load_state_dict(model_dict)
     print(checkpoint['loss'])
 
-    dataset = PointCloudDatasetAllBoth(df, root_dir)
+    dataset = PointCloudDatasetAllRotation(df, root_dir)
 
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 

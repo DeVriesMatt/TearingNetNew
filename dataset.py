@@ -5,6 +5,41 @@ import pandas as pd
 import os
 from pyntcloud import PyntCloud
 import numpy as np
+import random
+
+
+def translate_pointcloud(pointcloud):
+    xyz1 = np.random.uniform(low=2. / 3., high=3. / 2., size=[3])
+    xyz2 = np.random.uniform(low=-0.2, high=0.2, size=[3])
+
+    translated_pointcloud = np.add(np.multiply(pointcloud, xyz1), xyz2).astype('float32')
+    return translated_pointcloud
+
+
+def jitter_pointcloud(pointcloud, sigma=1, clip=0.02):
+    N, C = pointcloud.shape
+    rotation = np.copy(pointcloud)
+    rotation += np.clip(sigma * np.random.randn(N, C), -1 * clip, clip)
+    return rotation
+
+
+def generate_24_rotations():
+    res = []
+    for id in [[0, 1, 2], [1, 2, 0], [2, 0, 1]]:
+        R = np.identity(3)[:, id].astype(int)
+        R1= np.asarray([R[:, 0], R[:, 1], R[:, 2]]).T
+        R2 = np.asarray([-R[:, 0], -R[:, 1], R[:, 2]]).T
+        R3 = np.asarray([-R[:, 0], R[:, 1], -R[:, 2]]).T
+        R4 = np.asarray([R[:, 0], -R[:, 1], -R[:, 2]]).T
+        res += [R1, R2, R3, R4]
+    for id in [[0, 2, 1], [1, 0, 2], [2, 1, 0]]:
+        R = np.identity(3)[:, id].astype(int)
+        R1 = np.asarray([-R[:, 0], -R[:, 1], -R[:, 2]]).T
+        R2 = np.asarray([-R[:, 0], R[:, 1], R[:, 2]]).T
+        R3 = np.asarray([R[:, 0], -R[:, 1], R[:, 2]]).T
+        R4 = np.asarray([R[:, 0], R[:, 1], -R[:, 2]]).T
+        res += [R1, R2, R3, R4]
+    return res
 
 
 class PointCloudDataset(Dataset):
@@ -131,6 +166,79 @@ class PointCloudDatasetAll(Dataset):
         return image, treatment, feats, serial_number
 
 
+class PointCloudDatasetAllRotation(Dataset):
+    def __init__(
+            self,
+            annotations_file,
+            img_dir,
+            img_size=400,
+            label_col="Treatment",
+            transform=None,
+            target_transform=None,
+            cell_component="cell",
+            rotation_matrices=generate_24_rotations()
+
+    ):
+        self.annot_df = pd.read_csv(annotations_file)
+        self.img_dir = img_dir
+        self.img_size = img_size
+        self.label_col = label_col
+        self.transform = transform
+        self.target_transform = target_transform
+        self.cell_component = cell_component
+        self.rotation_matrices = rotation_matrices
+
+        self.new_df = self.annot_df[
+            (self.annot_df.xDim <= self.img_size)
+            & (self.annot_df.yDim <= self.img_size)
+            & (self.annot_df.zDim <= self.img_size)
+            ].reset_index(drop=True)
+
+        # encode label
+        le = LabelEncoder()
+        label_col_enc = self.new_df.loc[:, self.label_col]
+        label_col_enc = le.fit_transform(label_col_enc)
+        self.new_df["label_col_enc"] = label_col_enc
+
+    def __len__(self):
+        return len(self.new_df)
+
+    def __getitem__(self, idx):
+        # read the image
+        treatment = self.new_df.loc[idx, "Treatment"]
+        plate_num = "Plate" + str(self.new_df.loc[idx, "PlateNumber"])
+        if self.cell_component == "cell":
+            component_path = "stacked_pointcloud"
+        else:
+            component_path = "stacked_pointcloud_nucleus"
+
+        img_path = os.path.join(
+            self.img_dir,
+            plate_num,
+            component_path,
+            treatment,
+            self.new_df.loc[idx, "serialNumber"],
+        )
+        image = PyntCloud.from_file(img_path + ".ply")
+        image = torch.tensor(image.points.values)
+        mean = torch.mean(image, 0)
+        std = torch.tensor([[20., 20., 20.]])
+        image = (image - mean) / std
+        rotation_matrix = torch.tensor(self.rotation_matrices[random.randrange(0, 24)]).type(torch.FloatTensor)
+        rotated_image = torch.matmul(image, rotation_matrix)
+        # return encoded label as tensor
+        label = self.new_df.loc[idx, "label_col_enc"]
+        label = torch.tensor(label)
+
+        # return the classical features as torch tensor
+        feats = self.new_df.iloc[idx, 16:-4]
+        feats = torch.tensor(feats)
+
+        serial_number = self.new_df.loc[idx, "serialNumber"]
+
+        return image, treatment, rotated_image, serial_number
+
+
 class PointCloudDatasetAllDistal(Dataset):
     def __init__(
         self,
@@ -198,6 +306,80 @@ class PointCloudDatasetAllDistal(Dataset):
         serial_number = self.new_df.loc[idx, "serialNumber"]
 
         return image, treatment, feats, serial_number
+
+
+class PointCloudDatasetAllDistalRotation(Dataset):
+    def __init__(
+        self,
+        annotations_file,
+        img_dir,
+        img_size=400,
+        label_col="Treatment",
+        transform=None,
+        target_transform=None,
+        cell_component="cell",
+            rotation_matrices=generate_24_rotations()
+
+    ):
+        self.annot_df = pd.read_csv(annotations_file)
+        self.img_dir = img_dir
+        self.img_size = img_size
+        self.label_col = label_col
+        self.transform = transform
+        self.target_transform = target_transform
+        self.cell_component = cell_component
+        self.rotation_matrices = rotation_matrices
+
+        self.new_df = self.annot_df[
+            (self.annot_df.xDim <= self.img_size)
+            & (self.annot_df.yDim <= self.img_size)
+            & (self.annot_df.zDim <= self.img_size)
+            & (self.annot_df.Proximal == 0)
+        ].reset_index(drop=True)
+
+        # encode label
+        le = LabelEncoder()
+        label_col_enc = self.new_df.loc[:, self.label_col]
+        label_col_enc = le.fit_transform(label_col_enc)
+        self.new_df["label_col_enc"] = label_col_enc
+
+    def __len__(self):
+        return len(self.new_df)
+
+    def __getitem__(self, idx):
+        # read the image
+        treatment = self.new_df.loc[idx, "Treatment"]
+        plate_num = "Plate" + str(self.new_df.loc[idx, "PlateNumber"])
+        if self.cell_component == "cell":
+            component_path = "stacked_pointcloud"
+        else:
+            component_path = "stacked_pointcloud_nucleus"
+
+        img_path = os.path.join(
+            self.img_dir,
+            plate_num,
+            component_path,
+            treatment,
+            self.new_df.loc[idx, "serialNumber"],
+        )
+        image = PyntCloud.from_file(img_path + ".ply")
+        image = torch.tensor(image.points.values)
+        mean = torch.mean(image, 0)
+        std = torch.tensor([[20., 20., 20.]])
+        image = (image - mean) / std
+        rotation_matrix = torch.tensor(self.rotation_matrices[random.randrange(0, 24)]).type(torch.FloatTensor)
+        rotated_image = torch.matmul(image, rotation_matrix)
+        # return encoded label as tensor
+        label = self.new_df.loc[idx, "label_col_enc"]
+        label = torch.tensor(label)
+
+        # return the classical features as torch tensor
+        feats = self.new_df.iloc[idx, 16:-4]
+        feats = torch.tensor(feats)
+
+        serial_number = self.new_df.loc[idx, "serialNumber"]
+
+        return image, treatment, rotated_image, serial_number
 
 
 class PointCloudDatasetAllProximal(Dataset):
