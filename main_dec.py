@@ -69,6 +69,9 @@ if __name__ == "__main__":
     parser.add_argument('--proximal',
                         default=0,
                         type=int)
+    parser.add_argument('--gamma',
+                        default=10,
+                        type=int)
 
     args = parser.parse_args()
     df = args.dataframe_path
@@ -86,6 +89,7 @@ if __name__ == "__main__":
     batch_size = args.batch_size
     num_clusters = args.num_clusters
     proximal = args.proximal
+    gamma = args.gamma
 
     checkpoint = torch.load(fold_path)
 
@@ -125,7 +129,7 @@ if __name__ == "__main__":
                    output_dir=output_path,
                    update_interval=5,
                    divergence_tolerance=0.0001,
-                   gamma=10,
+                   gamma=gamma,
                    learning_rate=learning_rate,
                    batch_size=batch_size,
                    proximal=proximal)
