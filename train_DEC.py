@@ -130,8 +130,8 @@ def train_DEC_func(autoencoder,
                     loss_rec = criterion_rec(output, inputs)
                     p = torch.from_numpy(
                         p_distribution[((batch_num - 1) * batch_size):(batch_num*batch_size), :]
-                    ).unsqueeze(1).to('cuda:0')
-                    loss_cluster = criterion_cluster(torch.log(q.unsqueeze(1)), p)
+                    ).to('cuda:0')
+                    loss_cluster = criterion_cluster(torch.log(q), p)
                     loss = loss_rec + (gamma*loss_cluster)
                     # ===================backward====================
                     loss.backward()
