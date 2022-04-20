@@ -54,7 +54,7 @@ def train_DEC_func_rot(autoencoder,
         prox = 'Proximal'
     else:
         prox = 'All'
-    autoencoder.decoder_type = autoencoder.decoder_type + "DEC_rotation_power3" + prox
+    autoencoder.decoder_type = autoencoder.decoder_type + "DEC_rotation_power2_crossEntropy" + prox
     name_logging, name_model, name_writer, name = get_experiment_name(
         model=autoencoder, output_dir=output_dir
     )
