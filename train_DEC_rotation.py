@@ -123,17 +123,18 @@ def train_DEC_func_rot(autoencoder,
             for data in tepoch:
                 tepoch.set_description(f"Epoch {epoch}")
 
-                inputs = data[0]
-                inputs = inputs.to(device)
+                # inputs = data[0]
+                # inputs = inputs.to(device)
+                aligned_input = data[1].to(device)
                 rotated_input = data[2].to(device)
-                batch_size = inputs.shape[0]
+                batch_size = aligned_input.shape[0]
 
                 # ===================forward=====================
                 with torch.set_grad_enabled(True):
-                    output, features, q = model(inputs)
+                    output, features, q = model(aligned_input)
                     rotated_output, rotated_features, rotated_q = model(rotated_input)
                     optimizer.zero_grad()
-                    loss_rec = criterion_rec(output, inputs)
+                    loss_rec = criterion_rec(output, aligned_input)
                     p = torch.from_numpy(
                         p_distribution[((batch_num - 1) * batch_size):(batch_num*batch_size), :]
                     ).to('cuda:0')
@@ -199,9 +200,10 @@ def initialise_cluster_centres(autoencoder, dataloader_ind, device):
     with tqdm(dataloader_ind, unit="data") as tepoch:
         for data in tepoch:
             with torch.no_grad():
-                inputs = data[0]
-                inputs = inputs.to(device)
-                output, features = autoencoder(inputs)
+                # inputs = data[0]
+                # inputs = inputs.to(device)
+                aligned_input = data[1].to(device)
+                output, features = autoencoder(aligned_input)
                 features_all.append(torch.squeeze(features).cpu().detach().numpy())
 
     features_np = np.asarray(features_all)
@@ -241,9 +243,10 @@ def calculate_q_distribution(model, dataloader_ind, device):
     with tqdm(dataloader_ind, unit="data") as tepoch:
         for data in tepoch:
             with torch.no_grad():
-                inputs = data[0]
-                inputs = inputs.to(device)
-                output, features, q_distribution = model(inputs)
+                # inputs = data[0]
+                # inputs = inputs.to(device)
+                aligned_input = data[1].to(device)
+                output, features, q_distribution = model(aligned_input)
                 q_distribution_all.append(torch.squeeze(q_distribution).cpu().detach().numpy())
 
     q_distribution_np = np.asarray(q_distribution_all)

@@ -195,6 +195,7 @@ class PointCloudDatasetAllAligned(Dataset):
         transform=None,
         target_transform=None,
         cell_component="cell",
+            rotation_matrices=generate_24_rotations()
     ):
         self.annot_df = pd.read_csv(annotations_file)
         self.img_dir = img_dir
@@ -203,6 +204,7 @@ class PointCloudDatasetAllAligned(Dataset):
         self.transform = transform
         self.target_transform = target_transform
         self.cell_component = cell_component
+        self.rotation_matrices = rotation_matrices
 
         self.new_df = self.annot_df[
             (self.annot_df.xDim <= self.img_size)
@@ -241,10 +243,12 @@ class PointCloudDatasetAllAligned(Dataset):
         )
         image = PyntCloud.from_file(img_path + ".ply")
         image = image.points.values
-        aligned_image, _ = three_d_rotation(image, alpha=alpha, beta=beta, gamma=gamma)
+        aligned_image, _ = three_d_rotation(image, alpha=-alpha, beta=-beta, gamma=-gamma)
 
         image = torch.tensor(image)
         aligned_image = torch.tensor(aligned_image)
+        rotation_matrix = torch.tensor(self.rotation_matrices[random.randrange(0, 24)]).type(torch.FloatTensor)
+        rotated_image = torch.matmul(image, rotation_matrix)
 
         mean = torch.mean(image, 0)
         std = torch.tensor([[20., 20., 20.]])
@@ -259,7 +263,7 @@ class PointCloudDatasetAllAligned(Dataset):
 
         serial_number = self.new_df.loc[idx, "serialNumber"]
 
-        return image, treatment, aligned_image, serial_number
+        return image, aligned_image, rotated_image, serial_number
 
 
 class PointCloudDatasetAllRotation(Dataset):
