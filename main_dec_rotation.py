@@ -9,7 +9,8 @@ from dataset import PointCloudDatasetAllBoth, \
     PointCloudDatasetAllProximal, \
     PointCloudDatasetAllProximalRotation, \
     PointCloudDatasetAllDistalRotation, \
-    PointCloudDatasetAllPRotation
+    PointCloudDatasetAllPRotation, \
+    PointCloudDatasetAllAligned
 from autoencoder import GraphAutoEncoder
 from chamfer import ChamferLoss1
 import argparse
@@ -118,7 +119,7 @@ if __name__ == "__main__":
     elif proximal == 1:
         dataset = PointCloudDatasetAllProximalRotation(df, root_dir)
     else:
-        dataset = PointCloudDatasetAllPRotation(df, root_dir)
+        dataset = PointCloudDatasetAllAligned(df, root_dir)
 
     # TODO: Imperative that shuffle=False
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
