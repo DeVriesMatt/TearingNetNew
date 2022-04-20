@@ -13,22 +13,26 @@ from dec.deep_embedded_clustering import DEC
 
 
 def train_DEC_func_rot(autoencoder,
-                   dataloader,
-                   dataloader_ind,
-                   num_epochs,
-                   criterion_rec,
-                   criterion_cluster,
-                   output_dir,
-                   update_interval,
-                   divergence_tolerance,
-                   gamma,
-                   learning_rate,
-                   batch_size,
-                   proximal):
+                       dataloader,
+                       dataloader_ind,
+                       num_epochs,
+                       criterion_rec,
+                       criterion_cluster,
+                       criterion_rotation,
+                       output_dir,
+                       update_interval,
+                       divergence_tolerance,
+                       gamma,
+                       eta,
+                       learning_rate,
+                       batch_size,
+                       proximal):
     """
     Training for deep embedded clustering.
     Step 1: Initialise cluster centres
     Step 2:
+    :param eta:
+    :param criterion_rotation:
     :param autoencoder:
     :param dataloader:
     :param dataloader_ind:
@@ -80,10 +84,10 @@ def train_DEC_func_rot(autoencoder,
 
     # Initialise q distribution and p distribution
     logging.info("Initialising q and p distributions")
-    # q_distribution, previous_predictions = calculate_q_distribution(model=model,
-    #                                                                 dataloader_ind=dataloader_ind,
-    #                                                                 device=device)
-    # p_distribution = calculate_p_distribution(q_distribution=q_distribution)
+    q_distribution, previous_predictions = calculate_q_distribution(model=model,
+                                                                    dataloader_ind=dataloader_ind,
+                                                                    device=device)
+    p_distribution = calculate_p_distribution(q_distribution=q_distribution)
 
     model.to(device)
     model.train()
@@ -95,24 +99,24 @@ def train_DEC_func_rot(autoencoder,
         running_loss = 0.0
         if (epoch % update_interval == 0) and (epoch != 0):
             logging.info(f"Updating target distribution")
-            # q_distribution, predictions = calculate_q_distribution(model=model,
-            #                                                        dataloader_ind=dataloader_ind,
-            #                                                        device=device)
-            # p_distribution = calculate_p_distribution(q_distribution=q_distribution)
-            # delta_label, previous_predictions = check_tolerance(
-            #     predictions, previous_predictions
-            # )
-            # logging.info(f"Delta label == {delta_label}")
-            # if delta_label < divergence_tolerance:
-            #     print(
-            #         f"Label divergence {delta_label} < "
-            #         f"divergence tolerance {divergence_tolerance}"
-            #     )
-            #     print("Reached tolerance threshold. Stopping training.")
-            #     logging.info(f"Label divergence {delta_label} < "
-            #                  f"divergence tolerance {divergence_tolerance}"
-            #                  f"Reached tolerance threshold. Stopping training.")
-            #     break
+            q_distribution, predictions = calculate_q_distribution(model=model,
+                                                                   dataloader_ind=dataloader_ind,
+                                                                   device=device)
+            p_distribution = calculate_p_distribution(q_distribution=q_distribution)
+            delta_label, previous_predictions = check_tolerance(
+                predictions, previous_predictions
+            )
+            logging.info(f"Delta label == {delta_label}")
+            if delta_label < divergence_tolerance:
+                print(
+                    f"Label divergence {delta_label} < "
+                    f"divergence tolerance {divergence_tolerance}"
+                )
+                print("Reached tolerance threshold. Stopping training.")
+                logging.info(f"Label divergence {delta_label} < "
+                             f"divergence tolerance {divergence_tolerance}"
+                             f"Reached tolerance threshold. Stopping training.")
+                break
 
         model.train()
         with tqdm(dataloader, unit="batch") as tepoch:
@@ -130,11 +134,12 @@ def train_DEC_func_rot(autoencoder,
                     rotated_output, rotated_features, rotated_q = model(rotated_input)
                     optimizer.zero_grad()
                     loss_rec = criterion_rec(output, inputs)
-                    # p = torch.from_numpy(
-                    #     p_distribution[((batch_num - 1) * batch_size):(batch_num*batch_size), :]
-                    # ).to('cuda:0')
-                    loss_cluster = criterion_cluster(torch.log(q), rotated_q)
-                    loss = loss_rec + (gamma*loss_cluster)
+                    p = torch.from_numpy(
+                        p_distribution[((batch_num - 1) * batch_size):(batch_num*batch_size), :]
+                    ).to('cuda:0')
+                    loss_cluster = criterion_cluster(torch.log(q), p)
+                    loss_rotation = criterion_rotation(torch.log(q), rotated_q)
+                    loss = loss_rec + (gamma*loss_cluster) + (eta*loss_rotation)
                     # ===================backward====================
                     loss.backward()
                     optimizer.step()
@@ -251,7 +256,7 @@ def calculate_p_distribution(q_distribution):
     :param q_distribution:
     :return:
     """
-    norm_squared_q = q_distribution ** 2 / np.sum(q_distribution, axis=0)
+    norm_squared_q = q_distribution ** 3 / np.sum(q_distribution, axis=0)
     p_distribution = np.transpose(np.transpose(norm_squared_q) / np.sum(norm_squared_q, axis=1))
     return p_distribution
 
