@@ -147,6 +147,7 @@ def train_DEC_func_rot(autoencoder,
                 batch_loss = loss.detach().item() / batch_size
                 batch_loss_rec = loss_rec.detach().item() / batch_size
                 batch_loss_cluster = loss_cluster.detach().item() / batch_size
+                batch_loss_rotation = loss_rotation.detach().item() / batch_size
                 running_loss += batch_loss
                 batch_num += 1
                 writer.add_scalar("/Loss", batch_loss, niter)
@@ -162,6 +163,7 @@ def train_DEC_func_rot(autoencoder,
                         f"LossTot: {batch_loss}"
                         f"LossRec: {batch_loss_rec}"
                         f"LossCluster: {batch_loss_cluster}"
+                        f"LossRotation: {batch_loss_rotation}"
                     )
 
             total_loss = running_loss / len(dataloader)
