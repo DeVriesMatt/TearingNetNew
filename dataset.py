@@ -248,11 +248,16 @@ class PointCloudDatasetAllAligned(Dataset):
         image = torch.tensor(image)
         aligned_image = torch.tensor(aligned_image)
         rotation_matrix = torch.tensor(self.rotation_matrices[random.randrange(0, 24)]).type(torch.FloatTensor)
-        rotated_image = torch.matmul(image, rotation_matrix)
 
         mean = torch.mean(image, 0)
         std = torch.tensor([[20., 20., 20.]])
         image = (image - mean) / std
+        rotated_image = torch.matmul(image, rotation_matrix)
+
+        mean_al = torch.mean(aligned_image, 0)
+        std_al = torch.tensor([[20., 20., 20.]])
+        aligned_image = (aligned_image - mean_al) / std_al
+
         # return encoded label as tensor
         label = self.new_df.loc[idx, "label_col_enc"]
         label = torch.tensor(label)
