@@ -7,7 +7,9 @@ from dataset import PointCloudDatasetAllBoth, \
     PointCloudDatasetAll, \
     PointCloudDatasetAllDistal, \
     PointCloudDatasetAllProximal, \
-    PointCloudDatasetAllDistalRotation
+    PointCloudDatasetAllProximalRotation, \
+    PointCloudDatasetAllDistalRotation, \
+    PointCloudDatasetAllPRotation
 from autoencoder import GraphAutoEncoder
 from chamfer import ChamferLoss1
 import argparse
@@ -114,9 +116,9 @@ if __name__ == "__main__":
     if proximal == 0:
         dataset = PointCloudDatasetAllDistalRotation(df, root_dir)
     elif proximal == 1:
-        dataset = PointCloudDatasetAllProximal(df, root_dir)
+        dataset = PointCloudDatasetAllProximalRotation(df, root_dir)
     else:
-        dataset = PointCloudDatasetAll(df, root_dir)
+        dataset = PointCloudDatasetAllPRotation(df, root_dir)
 
     # TODO: Imperative that shuffle=False
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
@@ -124,7 +126,7 @@ if __name__ == "__main__":
 
     criterion_rec = ChamferLoss()
     criterion_cluster = torch.nn.KLDivLoss(reduction='batchmean')
-    criterion_rotation = torch.nn.KLDivLoss(reduction='batchmean')
+    criterion_rotation = nn.CrossEntropyLoss()
 
     train_DEC_func_rot(autoencoder=ae,
                        dataloader=dataloader,
