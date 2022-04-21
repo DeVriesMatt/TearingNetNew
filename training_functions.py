@@ -45,7 +45,7 @@ def train(model, dataloader, num_epochs, criterion, optimizer, output_dir):
 
                 # ===================forward=====================
                 with torch.set_grad_enabled(True):
-                    output, features = model(input)
+                    output, features = model(inputs)
                     optimizer.zero_grad()
                     loss = criterion(output, inputs)
                     # ===================backward====================
