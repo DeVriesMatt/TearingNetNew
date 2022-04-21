@@ -94,17 +94,17 @@ if __name__ == "__main__":
     checkpoint = torch.load(fold_path)
 
     ae = GraphAutoEncoder(num_features=num_features, k=20, encoder_type=encoder_type, decoder_type=decoder_type)
-    # model.load_state_dict(checkpoint['model_state_dict'])
-    model_dict = ae.state_dict()  # load parameters from pre-trained FoldingNet
-    for k in checkpoint['model_state_dict']:
-        if k in model_dict:
-            model_dict[k] = checkpoint['model_state_dict'][k]
-            print("    Found weight: " + k)
-        elif k.replace('folding1', 'folding') in model_dict:
-            model_dict[k.replace('folding1', 'folding')] = checkpoint['model_state_dict'][k]
-            print("    Found weight: " + k)
-    ae.load_state_dict(model_dict)
-    print(checkpoint['loss'])
+    ae.load_state_dict(checkpoint['model_state_dict'])
+    # model_dict = ae.state_dict()  # load parameters from pre-trained FoldingNet
+    # for k in checkpoint['model_state_dict']:
+    #     if k in model_dict:
+    #         model_dict[k] = checkpoint['model_state_dict'][k]
+    #         print("    Found weight: " + k)
+    #     elif k.replace('folding1', 'folding') in model_dict:
+    #         model_dict[k.replace('folding1', 'folding')] = checkpoint['model_state_dict'][k]
+    #         print("    Found weight: " + k)
+    # ae.load_state_dict(model_dict)
+    # print(checkpoint['loss'])
 
     if proximal == 0:
         dataset = PointCloudDatasetAllDistal(df, root_dir)
