@@ -243,7 +243,11 @@ class PointCloudDatasetAllAligned(Dataset):
         )
         image = PyntCloud.from_file(img_path + ".ply")
         image = image.points.values
-        aligned_image, _ = three_d_rotation(image, alpha=-alpha, beta=-beta, gamma=-gamma)
+        aligned_image, _ = three_d_rotation(image,
+                                            alpha=-abs(alpha),
+                                            beta=-abs(beta),
+                                            gamma=-abs(gamma)
+                                            )
 
         image = torch.tensor(image)
         aligned_image = torch.tensor(aligned_image)
