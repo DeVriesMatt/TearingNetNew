@@ -128,9 +128,9 @@ def train_DEC_func(autoencoder,
                     output, features, q = model(inputs)
                     optimizer.zero_grad()
                     loss_rec = criterion_rec(output, inputs)
-                    # p = torch.from_numpy(
-                    #     p_distribution[((batch_num - 1) * batch_size):(batch_num*batch_size), :]
-                    # ).to('cuda:0')
+                    p = torch.from_numpy(
+                        p_distribution[((batch_num - 1) * batch_size):(batch_num*batch_size), :]
+                    ).to('cuda:0')
                     loss_cluster = criterion_cluster(torch.log(q), p)
                     loss = loss_rec + (gamma*loss_cluster)
                     # ===================backward====================

@@ -272,7 +272,7 @@ class PointCloudDatasetAllAligned(Dataset):
 
         serial_number = self.new_df.loc[idx, "serialNumber"]
 
-        return image, aligned_image, rotated_image, serial_number
+        return image, aligned_image, rotated_image, (serial_number, treatment)
 
 
 class PointCloudDatasetAllRotation(Dataset):
