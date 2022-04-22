@@ -74,7 +74,7 @@ if __name__ == "__main__":
                         type=int)
     parser.add_argument('--divergence_threshold',
                         default=0.001,
-                        type=int)
+                        type=float)
     parser.add_argument('--update_interval',
                         default=5,
                         type=int)
