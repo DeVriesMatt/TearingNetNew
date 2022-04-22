@@ -68,7 +68,7 @@ if __name__ == "__main__":
                         default=16,
                         type=int)
     parser.add_argument('--num_clusters',
-                        default=3,
+                        default=5,
                         type=int)
     parser.add_argument('--proximal',
                         default=0,
@@ -143,4 +143,5 @@ if __name__ == "__main__":
                        eta=eta,
                        learning_rate=learning_rate,
                        batch_size=batch_size,
-                       proximal=proximal)
+                       proximal=proximal,
+                       num_clusters=num_clusters)

@@ -226,9 +226,9 @@ class PointCloudDatasetAllAligned(Dataset):
     def __getitem__(self, idx):
         # read the image
         treatment = self.new_df.loc[idx, "Treatment"]
-        alpha = 0
-        beta = self.new_df.loc[idx, 'Pitch_cell']
-        gamma = self.new_df.loc[idx, 'Azimuth_cell']
+        alpha = self.new_df.loc[idx, 'yaw']
+        beta = self.new_df.loc[idx, 'pitch']
+        gamma = self.new_df.loc[idx, 'roll']
         plate_num = "Plate" + str(self.new_df.loc[idx, "PlateNumber"])
         if self.cell_component == "cell":
             component_path = "stacked_pointcloud"
@@ -245,9 +245,9 @@ class PointCloudDatasetAllAligned(Dataset):
         image = PyntCloud.from_file(img_path + ".ply")
         image = image.points.values
         aligned_image, _ = three_d_rotation(image,
-                                            alpha=-abs(alpha),
-                                            beta=-abs(beta),
-                                            gamma=-abs(gamma)
+                                            alpha=-alpha,
+                                            beta=-beta,
+                                            gamma=-gamma
                                             )
 
         image = torch.tensor(image)

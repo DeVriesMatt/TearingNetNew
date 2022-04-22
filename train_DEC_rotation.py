@@ -26,11 +26,13 @@ def train_DEC_func_rot(autoencoder,
                        eta,
                        learning_rate,
                        batch_size,
-                       proximal):
+                       proximal,
+                       num_clusters):
     """
     Training for deep embedded clustering.
     Step 1: Initialise cluster centres
     Step 2:
+    :param num_clusters:
     :param eta:
     :param criterion_rotation:
     :param autoencoder:
@@ -72,7 +74,10 @@ def train_DEC_func_rot(autoencoder,
     print("Initialising cluster centres and deciding the model")
     logging.info("Initialising cluster centres and returning the model")
 
-    model = initialise_cluster_centres(autoencoder=autoencoder, dataloader_ind=dataloader_ind, device=device)
+    model = initialise_cluster_centres(autoencoder=autoencoder,
+                                       dataloader_ind=dataloader_ind,
+                                       device=device,
+                                       num_clusters=num_clusters)
     model.to(device)
     optimizer = torch.optim.Adam(
         model.parameters(),
@@ -182,13 +187,14 @@ def train_DEC_func_rot(autoencoder,
         # scheduler.step()
 
 
-def initialise_cluster_centres(autoencoder, dataloader_ind, device):
+def initialise_cluster_centres(autoencoder, dataloader_ind, device, num_clusters=None):
     """
     Initialise the cluster centres.
         Loop through the data to extract feature vectors for each data point.
         Perform elbow method to test the optimal number of clusters.
         Perform k-means with this optimal number and assign DEC model with this many clusters
         Add cluster centres as weights to new model
+    :param num_clusters:
     :param autoencoder:
     :param dataloader_ind: dataloader with batch size = 1
     :param device:
@@ -200,26 +206,26 @@ def initialise_cluster_centres(autoencoder, dataloader_ind, device):
     with tqdm(dataloader_ind, unit="data") as tepoch:
         for data in tepoch:
             with torch.no_grad():
-                # inputs = data[0]
-                # inputs = inputs.to(device)
-                aligned_input = data[1].to(device)
-                output, features = autoencoder(aligned_input)
+                inputs = data[0]
+                inputs = inputs.to(device)
+                output, features = autoencoder(inputs)
                 features_all.append(torch.squeeze(features).cpu().detach().numpy())
 
     features_np = np.asarray(features_all)
+    if num_clusters is None:
+        wcss = []
+        for i in range(1, 10):
+            kmeans = KMeans(i)
+            kmeans.fit(features_np)
+            wcss_iter = kmeans.inertia_
+            wcss.append(wcss_iter)
 
-    wcss = []
-    for i in range(1, 10):
-        kmeans = KMeans(i)
-        kmeans.fit(features_np)
-        wcss_iter = kmeans.inertia_
-        wcss.append(wcss_iter)
-
-    kl = KneeLocator(
-        range(1, 10), wcss, curve="convex", direction="decreasing"
-    )
-
-    number_clusters = kl.elbow
+        kl = KneeLocator(
+            range(1, 10), wcss, curve="convex", direction="decreasing"
+        )
+        number_clusters = kl.elbow
+    else:
+        number_clusters = num_clusters
     # logging.info(f"Optimal number of cluster: {number_clusters}")
     kmeans = KMeans(n_clusters=number_clusters, random_state=0).fit(features_np)
     weights = torch.from_numpy(kmeans.cluster_centers_)
