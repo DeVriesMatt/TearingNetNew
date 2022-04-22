@@ -64,13 +64,19 @@ if __name__ == "__main__":
                         default=16,
                         type=int)
     parser.add_argument('--num_clusters',
-                        default=3,
+                        default=None,
                         type=int)
     parser.add_argument('--proximal',
                         default=0,
                         type=int)
     parser.add_argument('--gamma',
                         default=10,
+                        type=int)
+    parser.add_argument('--divergence_threshold',
+                        default=0.0001,
+                        type=int)
+    parser.add_argument('--update_interval',
+                        default=5,
                         type=int)
 
     args = parser.parse_args()
@@ -90,6 +96,8 @@ if __name__ == "__main__":
     num_clusters = args.num_clusters
     proximal = args.proximal
     gamma = args.gamma
+    divergence_threshold = args.divergence_threshold
+    update_interval = args.update_interval
 
     checkpoint = torch.load(fold_path)
 
@@ -127,8 +135,8 @@ if __name__ == "__main__":
                    criterion_rec=criterion_rec,
                    criterion_cluster=criterion_cluster,
                    output_dir=output_path,
-                   update_interval=5,
-                   divergence_tolerance=0.0001,
+                   update_interval=update_interval,
+                   divergence_tolerance=divergence_threshold,
                    gamma=gamma,
                    learning_rate=learning_rate,
                    batch_size=batch_size,

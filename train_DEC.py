@@ -176,7 +176,13 @@ def train_DEC_func(autoencoder,
                 logging.info(f"Saving model to {name_model} with loss = {best_loss}.")
 
         # scheduler.step()
-
+    checkpoint = {
+        "model_state_dict": model.state_dict(),
+        "optimizer_state_dict": optimizer.state_dict(),
+        "epoch": epoch,
+        "loss": total_loss,
+    }
+    torch.save(checkpoint, name_model)
 
 def initialise_cluster_centres(autoencoder, dataloader_ind, device, num_clusters=None):
     """
