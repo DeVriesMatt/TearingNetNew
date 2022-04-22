@@ -132,7 +132,8 @@ if __name__ == "__main__":
                    gamma=gamma,
                    learning_rate=learning_rate,
                    batch_size=batch_size,
-                   proximal=proximal)
+                   proximal=proximal,
+                   num_clusters=num_clusters)
 
 
 

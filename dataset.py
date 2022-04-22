@@ -55,10 +55,11 @@ def three_d_rotation(pointcloud, alpha, beta, gamma):
          [-np.sin(beta),
           np.sin(alpha) * np.cos(beta),
           np.cos(alpha) * np.cos(beta)]]
-    )
-    rotation = np.copy(pointcloud)
-    rotation[:, ] = pointcloud[:, ].dot(rotation_matrix)
-    return rotation, (alpha, beta, gamma)
+    ).squeeze()
+
+    rotation = pointcloud @ rotation_matrix
+
+    return rotation, (alpha, beta, gamma, rotation_matrix)
 
 
 class PointCloudDataset(Dataset):
