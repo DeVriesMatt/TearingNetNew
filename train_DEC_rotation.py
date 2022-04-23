@@ -206,9 +206,9 @@ def initialise_cluster_centres(autoencoder, dataloader_ind, device, num_clusters
     with tqdm(dataloader_ind, unit="data") as tepoch:
         for data in tepoch:
             with torch.no_grad():
-                inputs = data[0]
-                inputs = inputs.to(device)
-                output, features = autoencoder(inputs)
+                aligned_inputs = data[1].to(device)
+                # inputs = inputs.to(device)
+                output, features = autoencoder(aligned_inputs)
                 features_all.append(torch.squeeze(features).cpu().detach().numpy())
 
     features_np = np.asarray(features_all)
