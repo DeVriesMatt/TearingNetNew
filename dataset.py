@@ -251,7 +251,7 @@ class PointCloudDatasetAllAligned(Dataset):
                                             )
 
         image = torch.tensor(image)
-        aligned_image = torch.tensor(aligned_image)
+        aligned_image = torch.tensor(aligned_image).type(torch.FloatTensor)
         rotation_matrix = torch.tensor(self.rotation_matrices[random.randrange(0, 24)]).type(torch.FloatTensor)
 
         mean = torch.mean(image, 0)

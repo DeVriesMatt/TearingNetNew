@@ -35,7 +35,7 @@ if __name__ == "__main__":
                                                   'SingleCellFromNathan_17122021/', type=str)
     parser.add_argument('--dataframe_path',
                         default='/home/mvries/Documents/Datasets/OPM/SingleCellFromNathan_17122021/'
-                                'all_cell_data.csv',
+                                'all_data_removedwrong_ori.csv',
                         type=str)
     parser.add_argument('--output_path', default='./', type=str)
     parser.add_argument('--num_epochs', default=250, type=int)
@@ -71,7 +71,7 @@ if __name__ == "__main__":
                         default=5,
                         type=int)
     parser.add_argument('--proximal',
-                        default=0,
+                        default=2,
                         type=int)
     parser.add_argument('--gamma',
                         default=10,
@@ -102,16 +102,16 @@ if __name__ == "__main__":
     checkpoint = torch.load(fold_path)
 
     ae = GraphAutoEncoder(num_features=num_features, k=20, encoder_type=encoder_type, decoder_type=decoder_type)
-    # model.load_state_dict(checkpoint['model_state_dict'])
-    model_dict = ae.state_dict()  # load parameters from pre-trained FoldingNet
-    for k in checkpoint['model_state_dict']:
-        if k in model_dict:
-            model_dict[k] = checkpoint['model_state_dict'][k]
-            print("    Found weight: " + k)
-        elif k.replace('folding1', 'folding') in model_dict:
-            model_dict[k.replace('folding1', 'folding')] = checkpoint['model_state_dict'][k]
-            print("    Found weight: " + k)
-    ae.load_state_dict(model_dict)
+    ae.load_state_dict(checkpoint['model_state_dict'])
+    # model_dict = ae.state_dict()  # load parameters from pre-trained FoldingNet
+    # for k in checkpoint['model_state_dict']:
+    #     if k in model_dict:
+    #         model_dict[k] = checkpoint['model_state_dict'][k]
+    #         print("    Found weight: " + k)
+    #     elif k.replace('folding1', 'folding') in model_dict:
+    #         model_dict[k.replace('folding1', 'folding')] = checkpoint['model_state_dict'][k]
+    #         print("    Found weight: " + k)
+    # ae.load_state_dict(model_dict)
     print(checkpoint['loss'])
 
     if proximal == 0:
