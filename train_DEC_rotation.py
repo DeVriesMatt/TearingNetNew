@@ -144,7 +144,8 @@ def train_DEC_func_rot(autoencoder,
                         p_distribution[((batch_num - 1) * batch_size):(batch_num*batch_size), :]
                     ).to('cuda:0')
                     loss_cluster = criterion_cluster(torch.log(q), p)
-                    loss_rotation = criterion_rotation(q, rotated_q)
+                    predicted_rot_cluster = torch.argmax(rotated_q, dim=1)
+                    loss_rotation = criterion_rotation(q, predicted_rot_cluster)
                     loss = loss_rec + (gamma*loss_cluster) + (eta*loss_rotation)
                     # ===================backward====================
                     loss.backward()
