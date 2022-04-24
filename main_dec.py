@@ -126,7 +126,7 @@ if __name__ == "__main__":
     dataloader_ind = DataLoader(dataset, batch_size=1, shuffle=False)
 
     criterion_rec = ChamferLoss()
-    criterion_cluster = torch.nn.KLDivLoss(reduction='sum')
+    criterion_cluster = torch.nn.KLDivLoss(reduction="batchmean")
 
     train_DEC_func(autoencoder=ae,
                    dataloader=dataloader,

@@ -6,17 +6,15 @@ from encoders.dgcnn import ChamferLoss
 from dataset import PointCloudDatasetAllBoth, \
     PointCloudDatasetAll, \
     PointCloudDatasetAllDistal, \
-    PointCloudDatasetAllProximal, \
-    PointCloudDatasetAllProximalRotation, \
-    PointCloudDatasetAllDistalRotation, \
-    PointCloudDatasetAllPRotation, \
+    PointCloudDatasetAllProximal,\
     PointCloudDatasetAllAligned
 from autoencoder import GraphAutoEncoder
 from chamfer import ChamferLoss1
 import argparse
 import os
 from encoders.dgcnn import ClusterlingLayer
-from train_DEC_rotation import train_DEC_func_rot
+# from train_DEC import train_DEC_func
+from train_DEC_aligned import train_DEC_func_aligned
 
 
 def create_dir_if_not_exist(path):
@@ -35,14 +33,14 @@ if __name__ == "__main__":
                                                   'SingleCellFromNathan_17122021/', type=str)
     parser.add_argument('--dataframe_path',
                         default='/home/mvries/Documents/Datasets/OPM/SingleCellFromNathan_17122021/'
-                                'all_data_removedwrong_ori.csv',
+                                'all_cell_data.csv',
                         type=str)
     parser.add_argument('--output_path', default='./', type=str)
     parser.add_argument('--num_epochs', default=250, type=int)
     parser.add_argument('--fold_path',
                         default='/run/user/1128299809/gvfs/smb-share:server=rds.icr.ac.uk,share=data/'
-                                'DBI/DUDBI/DYNCESYS/mvries/ResultsAlma/TearingNetNew/nets/'
-                                'dgcnn_foldingnet_128_001.pt',
+                                'DBI/DUDBI/DYNCESYS/mvries/ResultsAlma/TearingNetNew/shapenet/nets/'
+                                'dgcnn_foldingnet_128_002.pt',
                         type=str)
     parser.add_argument('--dgcnn_path',
                         default='/run/user/1128299809/gvfs/smb-share:server=rds.icr.ac.uk,share=data/'
@@ -68,7 +66,7 @@ if __name__ == "__main__":
                         default=16,
                         type=int)
     parser.add_argument('--num_clusters',
-                        default=5,
+                        default=None,
                         type=int)
     parser.add_argument('--proximal',
                         default=2,
@@ -76,8 +74,11 @@ if __name__ == "__main__":
     parser.add_argument('--gamma',
                         default=10,
                         type=int)
-    parser.add_argument('--eta',
-                        default=10,
+    parser.add_argument('--divergence_threshold',
+                        default=0.001,
+                        type=float)
+    parser.add_argument('--update_interval',
+                        default=5,
                         type=int)
 
     args = parser.parse_args()
@@ -97,7 +98,8 @@ if __name__ == "__main__":
     num_clusters = args.num_clusters
     proximal = args.proximal
     gamma = args.gamma
-    eta = args.eta
+    divergence_threshold = args.divergence_threshold
+    update_interval = args.update_interval
 
     checkpoint = torch.load(fold_path)
 
@@ -112,12 +114,12 @@ if __name__ == "__main__":
     #         model_dict[k.replace('folding1', 'folding')] = checkpoint['model_state_dict'][k]
     #         print("    Found weight: " + k)
     # ae.load_state_dict(model_dict)
-    print(checkpoint['loss'])
+    # print(checkpoint['loss'])
 
     if proximal == 0:
-        dataset = PointCloudDatasetAllDistalRotation(df, root_dir)
+        dataset = PointCloudDatasetAllDistal(df, root_dir)
     elif proximal == 1:
-        dataset = PointCloudDatasetAllProximalRotation(df, root_dir)
+        dataset = PointCloudDatasetAllProximal(df, root_dir)
     else:
         dataset = PointCloudDatasetAllAligned(df, root_dir)
 
@@ -126,22 +128,19 @@ if __name__ == "__main__":
     dataloader_ind = DataLoader(dataset, batch_size=1, shuffle=False)
 
     criterion_rec = ChamferLoss()
-    criterion_cluster = torch.nn.KLDivLoss(reduction='batchmean')
-    criterion_rotation = nn.CrossEntropyLoss()
+    criterion_cluster = torch.nn.KLDivLoss(reduction="batchmean")
 
-    train_DEC_func_rot(autoencoder=ae,
-                       dataloader=dataloader,
-                       dataloader_ind=dataloader_ind,
-                       num_epochs=num_epochs,
-                       criterion_rec=criterion_rec,
-                       criterion_cluster=criterion_cluster,
-                       criterion_rotation=criterion_rotation,
-                       output_dir=output_path,
-                       update_interval=5,
-                       divergence_tolerance=0.0001,
-                       gamma=gamma,
-                       eta=eta,
-                       learning_rate=learning_rate,
-                       batch_size=batch_size,
-                       proximal=proximal,
-                       num_clusters=num_clusters)
+    train_DEC_func_aligned(autoencoder=ae,
+                           dataloader=dataloader,
+                           dataloader_ind=dataloader_ind,
+                           num_epochs=num_epochs,
+                           criterion_rec=criterion_rec,
+                           criterion_cluster=criterion_cluster,
+                           output_dir=output_path,
+                           update_interval=update_interval,
+                           divergence_tolerance=divergence_threshold,
+                           gamma=gamma,
+                           learning_rate=learning_rate,
+                           batch_size=batch_size,
+                           proximal=proximal,
+                           num_clusters=num_clusters)

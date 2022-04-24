@@ -52,14 +52,13 @@ def train_DEC_func(autoencoder,
         prox = 'Proximal'
     else:
         prox = 'All'
-    autoencoder.decoder_type = autoencoder.decoder_type + "DEC" + prox
+    autoencoder.decoder_type = autoencoder.decoder_type + "DEC" + prox + f"clusters{num_clusters}"
     name_logging, name_model, name_writer, name = get_experiment_name(
         model=autoencoder, output_dir=output_dir
     )
     now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     logging.basicConfig(filename=name_logging, level=logging.INFO)
     logging.info(f"Started training model {name} at {now}.")
-
 
     logging.info(f"Training on {prox} data with number of clusters set to {num_clusters}")
     writer = SummaryWriter(log_dir=name_writer)

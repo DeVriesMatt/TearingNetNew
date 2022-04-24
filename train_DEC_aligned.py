@@ -12,29 +12,25 @@ from kneed import KneeLocator
 from dec.deep_embedded_clustering import DEC
 
 
-def train_DEC_func_rot(autoencoder,
-                       dataloader,
-                       dataloader_ind,
-                       num_epochs,
-                       criterion_rec,
-                       criterion_cluster,
-                       criterion_rotation,
-                       output_dir,
-                       update_interval,
-                       divergence_tolerance,
-                       gamma,
-                       eta,
-                       learning_rate,
-                       batch_size,
-                       proximal,
-                       num_clusters):
+def train_DEC_func_aligned(autoencoder,
+                   dataloader,
+                   dataloader_ind,
+                   num_epochs,
+                   criterion_rec,
+                   criterion_cluster,
+                   output_dir,
+                   update_interval,
+                   divergence_tolerance,
+                   gamma,
+                   learning_rate,
+                   batch_size,
+                   proximal,
+                   num_clusters):
     """
     Training for deep embedded clustering.
     Step 1: Initialise cluster centres
     Step 2:
     :param num_clusters:
-    :param eta:
-    :param criterion_rotation:
     :param autoencoder:
     :param dataloader:
     :param dataloader_ind:
@@ -56,7 +52,7 @@ def train_DEC_func_rot(autoencoder,
         prox = 'Proximal'
     else:
         prox = 'All'
-    autoencoder.decoder_type = autoencoder.decoder_type + "DEC_rotation_power2_crossEntropy" + prox + f"clus{num_clusters}"
+    autoencoder.decoder_type = autoencoder.decoder_type + "DEC" + prox + f"clusters{num_clusters}_aligned"
     name_logging, name_model, name_writer, name = get_experiment_name(
         model=autoencoder, output_dir=output_dir
     )
@@ -64,8 +60,7 @@ def train_DEC_func_rot(autoencoder,
     logging.basicConfig(filename=name_logging, level=logging.INFO)
     logging.info(f"Started training model {name} at {now}.")
 
-
-    logging.info(f"Training on {prox} data")
+    logging.info(f"Training on {prox} data with number of clusters set to {num_clusters}")
     writer = SummaryWriter(log_dir=name_writer)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     autoencoder.to(device)
@@ -77,7 +72,8 @@ def train_DEC_func_rot(autoencoder,
     model = initialise_cluster_centres(autoencoder=autoencoder,
                                        dataloader_ind=dataloader_ind,
                                        device=device,
-                                       num_clusters=num_clusters)
+                                       num_clusters=num_clusters
+                                       )
     model.to(device)
     optimizer = torch.optim.Adam(
         model.parameters(),
@@ -128,25 +124,20 @@ def train_DEC_func_rot(autoencoder,
             for data in tepoch:
                 tepoch.set_description(f"Epoch {epoch}")
 
-                # inputs = data[0]
-                # inputs = inputs.to(device)
-                aligned_input = data[1].to(device)
-                rotated_input = data[2].to(device)
-                batch_size = aligned_input.shape[0]
+                inputs = data[1]
+                inputs = inputs.to(device)
+                batch_size = inputs.shape[1]
 
                 # ===================forward=====================
                 with torch.set_grad_enabled(True):
-                    output, features, q = model(aligned_input)
-                    rotated_output, rotated_features, rotated_q = model(rotated_input)
+                    output, features, q = model(inputs)
                     optimizer.zero_grad()
-                    loss_rec = criterion_rec(output, aligned_input)
+                    loss_rec = criterion_rec(output, inputs)
                     p = torch.from_numpy(
                         p_distribution[((batch_num - 1) * batch_size):(batch_num*batch_size), :]
                     ).to('cuda:0')
                     loss_cluster = criterion_cluster(torch.log(q), p)
-                    predicted_rot_cluster = torch.argmax(rotated_q, dim=1)
-                    loss_rotation = criterion_rotation(q, predicted_rot_cluster)
-                    loss = loss_rec + (gamma*loss_cluster) + (eta*loss_rotation)
+                    loss = loss_rec + (gamma*loss_cluster)
                     # ===================backward====================
                     loss.backward()
                     optimizer.step()
@@ -154,7 +145,6 @@ def train_DEC_func_rot(autoencoder,
                 batch_loss = loss.detach().item() / batch_size
                 batch_loss_rec = loss_rec.detach().item() / batch_size
                 batch_loss_cluster = loss_cluster.detach().item() / batch_size
-                batch_loss_rotation = loss_rotation.detach().item() / batch_size
                 running_loss += batch_loss
                 batch_num += 1
                 writer.add_scalar("/Loss", batch_loss, niter)
@@ -170,7 +160,6 @@ def train_DEC_func_rot(autoencoder,
                         f"LossTot: {batch_loss}"
                         f"LossRec: {batch_loss_rec}"
                         f"LossCluster: {batch_loss_cluster}"
-                        f"LossRotation: {batch_loss_rotation}"
                     )
 
             total_loss = running_loss / len(dataloader)
@@ -186,7 +175,13 @@ def train_DEC_func_rot(autoencoder,
                 logging.info(f"Saving model to {name_model} with loss = {best_loss}.")
 
         # scheduler.step()
-
+    checkpoint = {
+        "model_state_dict": model.state_dict(),
+        "optimizer_state_dict": optimizer.state_dict(),
+        "epoch": epoch,
+        "loss": total_loss,
+    }
+    torch.save(checkpoint, name_model)
 
 def initialise_cluster_centres(autoencoder, dataloader_ind, device, num_clusters=None):
     """
@@ -207,9 +202,9 @@ def initialise_cluster_centres(autoencoder, dataloader_ind, device, num_clusters
     with tqdm(dataloader_ind, unit="data") as tepoch:
         for data in tepoch:
             with torch.no_grad():
-                aligned_inputs = data[1].to(device)
-                # inputs = inputs.to(device)
-                output, features = autoencoder(aligned_inputs)
+                inputs = data[1]
+                inputs = inputs.to(device)
+                output, features = autoencoder(inputs)
                 features_all.append(torch.squeeze(features).cpu().detach().numpy())
 
     features_np = np.asarray(features_all)
@@ -250,10 +245,9 @@ def calculate_q_distribution(model, dataloader_ind, device):
     with tqdm(dataloader_ind, unit="data") as tepoch:
         for data in tepoch:
             with torch.no_grad():
-                # inputs = data[0]
-                # inputs = inputs.to(device)
-                aligned_input = data[1].to(device)
-                output, features, q_distribution = model(aligned_input)
+                inputs = data[1]
+                inputs = inputs.to(device)
+                output, features, q_distribution = model(inputs)
                 q_distribution_all.append(torch.squeeze(q_distribution).cpu().detach().numpy())
 
     q_distribution_np = np.asarray(q_distribution_all)
@@ -264,6 +258,7 @@ def calculate_q_distribution(model, dataloader_ind, device):
 
 def calculate_p_distribution(q_distribution):
     """
+
     :param q_distribution:
     :return:
     """
