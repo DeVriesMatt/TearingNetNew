@@ -13,19 +13,19 @@ from dec.deep_embedded_clustering import DEC
 
 
 def train_DEC_func_aligned(autoencoder,
-                   dataloader,
-                   dataloader_ind,
-                   num_epochs,
-                   criterion_rec,
-                   criterion_cluster,
-                   output_dir,
-                   update_interval,
-                   divergence_tolerance,
-                   gamma,
-                   learning_rate,
-                   batch_size,
-                   proximal,
-                   num_clusters):
+                           dataloader,
+                           dataloader_ind,
+                           num_epochs,
+                           criterion_rec,
+                           criterion_cluster,
+                           output_dir,
+                           update_interval,
+                           divergence_tolerance,
+                           gamma,
+                           learning_rate,
+                           batch_size,
+                           proximal,
+                           num_clusters):
     """
     Training for deep embedded clustering.
     Step 1: Initialise cluster centres
@@ -126,7 +126,7 @@ def train_DEC_func_aligned(autoencoder,
 
                 inputs = data[1]
                 inputs = inputs.to(device)
-                batch_size = inputs.shape[1]
+                batch_size = inputs.shape[0]
 
                 # ===================forward=====================
                 with torch.set_grad_enabled(True):
@@ -134,10 +134,12 @@ def train_DEC_func_aligned(autoencoder,
                     optimizer.zero_grad()
                     loss_rec = criterion_rec(output, inputs)
                     p = torch.from_numpy(
-                        p_distribution[((batch_num - 1) * batch_size):(batch_num*batch_size), :]
+                        p_distribution[((batch_num - 1) * batch_size):(batch_num * batch_size), :]
                     ).to('cuda:0')
+                    print(p.shape)
+                    print(q.shape)
                     loss_cluster = criterion_cluster(torch.log(q), p)
-                    loss = loss_rec + (gamma*loss_cluster)
+                    loss = loss_rec + (gamma * loss_cluster)
                     # ===================backward====================
                     loss.backward()
                     optimizer.step()
@@ -182,6 +184,7 @@ def train_DEC_func_aligned(autoencoder,
         "loss": total_loss,
     }
     torch.save(checkpoint, name_model)
+
 
 def initialise_cluster_centres(autoencoder, dataloader_ind, device, num_clusters=None):
     """
@@ -282,4 +285,3 @@ def check_tolerance(cluster_predictions, previous_cluster_predictions):
     )
     previous_cluster_predictions = np.copy(cluster_predictions)
     return delta_label, previous_cluster_predictions
-

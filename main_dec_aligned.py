@@ -33,7 +33,7 @@ if __name__ == "__main__":
                                                   'SingleCellFromNathan_17122021/', type=str)
     parser.add_argument('--dataframe_path',
                         default='/home/mvries/Documents/Datasets/OPM/SingleCellFromNathan_17122021/'
-                                'all_cell_data.csv',
+                                'all_data_removedwrong_ori.csv',
                         type=str)
     parser.add_argument('--output_path', default='./', type=str)
     parser.add_argument('--num_epochs', default=250, type=int)
@@ -128,7 +128,7 @@ if __name__ == "__main__":
     dataloader_ind = DataLoader(dataset, batch_size=1, shuffle=False)
 
     criterion_rec = ChamferLoss()
-    criterion_cluster = torch.nn.KLDivLoss(reduction="batchmean")
+    criterion_cluster = torch.nn.KLDivLoss()
 
     train_DEC_func_aligned(autoencoder=ae,
                            dataloader=dataloader,

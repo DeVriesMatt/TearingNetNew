@@ -33,7 +33,7 @@ class FoldingNetBasicDecoder(nn.Module):
 
         else:
             x = x.unsqueeze(1)
-
+        # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         grid = self.grid.cuda().unsqueeze(0).expand(x.shape[0], -1, -1)
         outputs = self.folding(x, grid)
         return outputs, grid
