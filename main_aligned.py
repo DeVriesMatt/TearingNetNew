@@ -78,17 +78,17 @@ if __name__ == "__main__":
     # model.load_state_dict(checkpoint['model_state_dict'])
 
     checkpoint = torch.load(fold_path)
-    model.load_state_dict(checkpoint['model_state_dict'])
-    # model_dict = model.state_dict()  # load parameters from pre-trained FoldingNet
-    # for k in checkpoint['model_state_dict']:
-    #     if k in model_dict:
-    #         model_dict[k] = checkpoint['model_state_dict'][k]
-    #         print("    Found weight: " + k)
-    #     elif k.replace('folding1', 'folding') in model_dict:
-    #         model_dict[k.replace('folding1', 'folding')] = checkpoint['model_state_dict'][k]
-    #         print("    Found weight: " + k)
-    # model.load_state_dict(model_dict)
-    print(checkpoint['loss'])
+    # model.load_state_dict(checkpoint['model_state_dict'])
+    model_dict = model.state_dict()  # load parameters from pre-trained FoldingNet
+    for k in checkpoint['model_state_dict']:
+        if k in model_dict:
+            model_dict[k] = checkpoint['model_state_dict'][k]
+            print("    Found weight: " + k)
+        elif k.replace('folding1', 'folding') in model_dict:
+            model_dict[k.replace('folding1', 'folding')] = checkpoint['model_state_dict'][k]
+            print("    Found weight: " + k)
+    model.load_state_dict(model_dict)
+    # print(checkpoint['loss'])
 
     dataset = PointCloudDatasetAllAligned(df, root_dir)
 
