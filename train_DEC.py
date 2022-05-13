@@ -50,8 +50,10 @@ def train_DEC_func(autoencoder,
         prox = 'Distal'
     elif proximal == 1:
         prox = 'Proximal'
-    else:
+    elif proximal == 2:
         prox = 'All'
+    else:
+        prox = 'BlebbNoc'
     autoencoder.decoder_type = autoencoder.decoder_type + "DEC" + prox + f"clusters{num_clusters}"
     name_logging, name_model, name_writer, name = get_experiment_name(
         model=autoencoder, output_dir=output_dir
