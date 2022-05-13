@@ -6,7 +6,8 @@ from encoders.dgcnn import ChamferLoss
 from dataset import PointCloudDatasetAllBoth, \
     PointCloudDatasetAll, \
     PointCloudDatasetAllDistal, \
-    PointCloudDatasetAllProximal
+    PointCloudDatasetAllProximal, \
+    PointCloudDatasetAllBlebbNoc
 from autoencoder import GraphAutoEncoder
 from chamfer import ChamferLoss1
 import argparse
@@ -79,6 +80,7 @@ if __name__ == "__main__":
                         default=5,
                         type=int)
 
+
     args = parser.parse_args()
     df = args.dataframe_path
     root_dir = args.dataset_path
@@ -118,8 +120,10 @@ if __name__ == "__main__":
         dataset = PointCloudDatasetAllDistal(df, root_dir)
     elif proximal == 1:
         dataset = PointCloudDatasetAllProximal(df, root_dir)
-    else:
+    elif proximal == 2:
         dataset = PointCloudDatasetAll(df, root_dir)
+    else:
+        dataset = PointCloudDatasetAllBlebbNoc(df, root_dir)
 
     # TODO: Imperative that shuffle=False
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
