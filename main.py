@@ -4,7 +4,8 @@ from training_functions import train
 from encoders.dgcnn import ChamferLoss
 from dataset import PointCloudDatasetAllBoth,\
     PointCloudDatasetAllRotation,\
-    PointCloudDatasetAll
+    PointCloudDatasetAll, \
+    GefGapAllAlignedPCA
 from autoencoder import GraphAutoEncoder
 from chamfer import ChamferLoss1
 import argparse
@@ -30,7 +31,7 @@ if __name__ == "__main__":
     parser.add_argument('--output_path', default='./', type=str)
     parser.add_argument('--num_epochs', default=250, type=int)
     parser.add_argument('--fold_path',
-                        default='/run/user/1128299809/gvfs/smb-share:server=rds.icr.ac.uk,share=data/DBI/DUDBI/DYNCESYS/mvries/ResultsAlma/TearingNetNew/shapenet/nets/dgcnn_foldingnet_128_001.pt',
+                        default='/run/user/1128299809/gvfs/smb-share:server=rds.icr.ac.uk,share=data/DBI/DUDBI/DYNCESYS/mvries/ResultsAlma/TearingNetNew/nets/dgcnn_foldingnet_128_008.pt',
                         type=str)
     parser.add_argument('--dgcnn_path',
                         default='/run/user/1128299809/gvfs/smb-share:server=rds.icr.ac.uk,share=data/DBI/DUDBI/DYNCESYS/mvries/Reconstruct_dgcnn_cls_k20_plane/models/shapenetcorev2_250.pkl',
@@ -89,7 +90,7 @@ if __name__ == "__main__":
     # model.load_state_dict(model_dict)
     print(checkpoint['loss'])
 
-    dataset = PointCloudDatasetAll(df, root_dir)
+    dataset = GefGapAllAlignedPCA(df, root_dir)
 
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 

@@ -259,7 +259,6 @@ class PointCloudDatasetAllBlebbNoc(Dataset):
         return image, treatment, feats, serial_number
 
 
-
 class PointCloudDatasetAllAligned(Dataset):
     def __init__(
         self,
@@ -305,9 +304,9 @@ class PointCloudDatasetAllAligned(Dataset):
         gamma = self.new_df.loc[idx, 'roll']
         plate_num = "Plate" + str(self.new_df.loc[idx, "PlateNumber"])
         if self.cell_component == "cell":
-            component_path = "stacked_pointcloud"
+            component_path = "stacked_pointcloud_aligned"
         else:
-            component_path = "stacked_pointcloud_nucleus"
+            component_path = "stacked_pointcloud_nucleus_aligned"
 
         img_path = os.path.join(
             self.img_dir,
@@ -319,24 +318,34 @@ class PointCloudDatasetAllAligned(Dataset):
         image = PyntCloud.from_file(img_path + ".ply")
         image = image.points.values
 
-        image = torch.tensor(image)
+
         rotation_matrix = torch.tensor(self.rotation_matrices[random.randrange(0, 24)]).type(torch.FloatTensor)
 
+        # image = (image - mean)
+        # print(image.shape)
+        # from sklearn.decomposition import PCA
+        # pca = PCA(n_components=3)
+        # pca.fit(image)
+        # # aligned_image, _ = three_d_rotation(image.numpy(),
+        # #                                     alpha=-alpha,
+        # #                                     beta=-beta,
+        # #                                     gamma=-gamma
+        # #                                     )
+        # aligned_image = image @ pca.components_.T
+        # aligned_image = torch.tensor(aligned_image).type(torch.FloatTensor)
+        # aligned_image = (aligned_image-torch.mean(aligned_image, 0))/torch.tensor([[20., 20., 20.]])
+
+        image = torch.tensor(image)
         mean = torch.mean(image, 0)
         std = torch.tensor([[20., 20., 20.]])
-        image = (image - mean) / std
-        aligned_image, _ = three_d_rotation(image.numpy(),
-                                            alpha=-alpha,
-                                            beta=-beta,
-                                            gamma=-gamma
-                                            )
-        aligned_image = torch.tensor(aligned_image).type(torch.FloatTensor)
 
+        image = (image-mean)/std
         rotated_image = torch.matmul(image, rotation_matrix)
+        rotated_image = (rotated_image - torch.mean(rotated_image, 0))/std
 
-        mean_al = torch.mean(aligned_image, 0)
-        std_al = torch.tensor([[20., 20., 20.]])
-        aligned_image = (aligned_image - mean_al) / std_al
+        # mean_al = torch.mean(aligned_image, 0)
+        # std_al = torch.tensor([[20., 20., 20.]])
+        # aligned_image = (aligned_image - mean_al) / std_al
 
         # return encoded label as tensor
         label = self.new_df.loc[idx, "label_col_enc"]
@@ -348,7 +357,7 @@ class PointCloudDatasetAllAligned(Dataset):
 
         serial_number = self.new_df.loc[idx, "serialNumber"]
 
-        return image, aligned_image, rotated_image, (serial_number, treatment)
+        return image, image, rotated_image, (serial_number, treatment)
 
 
 class PointCloudDatasetAllAlignedPCA(Dataset):
@@ -427,6 +436,64 @@ class PointCloudDatasetAllAlignedPCA(Dataset):
         feats = self.new_df.iloc[idx, 16:-4]
         feats = torch.tensor(feats)
 
+        serial_number = self.new_df.loc[idx, "serialNumber"]
+
+        return image, aligned_image, aligned_image, (serial_number, treatment)
+
+
+class GefGapAllAlignedPCA(Dataset):
+    def __init__(
+            self,
+            annotations_file,
+            img_dir,
+            img_size=400,
+            label_col="Treatment",
+            transform=None,
+            target_transform=None,
+            cell_component="cell",
+            plate_num="1"
+    ):
+        self.new_df = pd.read_csv(annotations_file)
+        self.img_dir = img_dir
+        self.img_size = img_size
+        self.label_col = label_col
+        self.transform = transform
+        self.target_transform = target_transform
+        self.cell_component = cell_component
+        self.plate_num = plate_num
+
+    def __len__(self):
+        return len(self.new_df)
+
+    def __getitem__(self, idx):
+        # read the image
+        treatment = self.new_df.loc[idx, "treatment"]
+        plate = "Plate" + self.plate_num
+        if self.cell_component == "cell":
+            component_path = "stacked_pointcloud"
+        else:
+            component_path = "stacked_pointcloud_nucleus"
+
+        img_path = os.path.join(
+            self.img_dir,
+            plate,
+            component_path,
+            "Cells",
+            self.new_df.loc[idx, "serialNumber"],
+        )
+        image = PyntCloud.from_file(img_path + ".ply")
+        image = image.points.values
+
+        image = torch.tensor(image)
+        mean = torch.mean(image, 0)
+        std = torch.tensor([[20., 20., 20.]])
+        image = (image - mean) / std
+
+        # pca = PCA(n_components=3)
+        # pca.fit(image.numpy())
+
+        # aligned_image = torch.tensor(image.numpy() @ pca.components_.T)
+        aligned_image = image
         serial_number = self.new_df.loc[idx, "serialNumber"]
 
         return image, aligned_image, aligned_image, (serial_number, treatment)
