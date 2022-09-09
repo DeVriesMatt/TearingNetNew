@@ -4,7 +4,6 @@ from sklearn.preprocessing import LabelEncoder
 import pandas as pd
 import os
 from pyntcloud import PyntCloud
-import numpy as np
 import random
 import numpy as np
 from sklearn.decomposition import PCA
@@ -131,6 +130,7 @@ class PointCloudDatasetAll(Dataset):
         transform=None,
         target_transform=None,
         cell_component="cell",
+            num_points=2046
     ):
         self.annot_df = pd.read_csv(annotations_file)
         self.img_dir = img_dir
@@ -139,6 +139,7 @@ class PointCloudDatasetAll(Dataset):
         self.transform = transform
         self.target_transform = target_transform
         self.cell_component = cell_component
+        self.num_points = num_points
 
         self.new_df = self.annot_df[
             (self.annot_df.xDim <= self.img_size)
@@ -159,10 +160,16 @@ class PointCloudDatasetAll(Dataset):
         # read the image
         treatment = self.new_df.loc[idx, "Treatment"]
         plate_num = "Plate" + str(self.new_df.loc[idx, "PlateNumber"])
+
+        if self.num_points == 4096:
+            num_str = "_4096"
+        else: num_str = ""
+
         if self.cell_component == "cell":
-            component_path = "stacked_pointcloud"
+            component_path = "stacked_pointcloud" + num_str
         else:
-            component_path = "stacked_pointcloud_nucleus"
+            component_path = "stacked_pointcloud_nucleus" + num_str
+
 
         img_path = os.path.join(
             self.img_dir,
@@ -424,10 +431,10 @@ class PointCloudDatasetAllAlignedPCA(Dataset):
         image = (image - mean) / std
 
         pca = PCA(n_components=3)
-        pca.fit(image.numpy())
+        # pca.fit(image.numpy())
 
-        aligned_image = torch.tensor(image.numpy() @ pca.components_.T)
-
+        # aligned_image = torch.tensor(image.numpy() @ pca.components_.T)
+        aligned_image = torch.tensor(pca.fit_transform(image.numpy()))
         # return encoded label as tensor
         label = self.new_df.loc[idx, "label_col_enc"]
         label = torch.tensor(label)
@@ -469,6 +476,63 @@ class GefGapAllAlignedPCA(Dataset):
         # read the image
         treatment = self.new_df.loc[idx, "treatment"]
         plate = "Plate" + self.plate_num
+        if self.cell_component == "cell":
+            component_path = "stacked_pointcloud"
+        else:
+            component_path = "stacked_pointcloud_nucleus"
+
+        img_path = os.path.join(
+            self.img_dir,
+            plate,
+            component_path,
+            "Cells",
+            self.new_df.loc[idx, "serialNumber"],
+        )
+        image = PyntCloud.from_file(img_path + ".ply")
+        image = image.points.values
+
+        image = torch.tensor(image)
+        mean = torch.mean(image, 0)
+        std = torch.tensor([[20., 20., 20.]])
+        image = (image - mean) / std
+
+        # pca = PCA(n_components=3)
+        # pca.fit(image.numpy())
+
+        # aligned_image = torch.tensor(image.numpy() @ pca.components_.T)
+        aligned_image = image
+        serial_number = self.new_df.loc[idx, "serialNumber"]
+
+        return image, aligned_image, aligned_image, (serial_number, treatment)
+
+
+class GefGapAlignedBothPlates(Dataset):
+    def __init__(
+            self,
+            annotations_file,
+            img_dir,
+            img_size=400,
+            label_col="Treatment",
+            transform=None,
+            target_transform=None,
+            cell_component="cell",
+    ):
+        self.new_df = pd.read_csv(annotations_file)
+        self.img_dir = img_dir
+        self.img_size = img_size
+        self.label_col = label_col
+        self.transform = transform
+        self.target_transform = target_transform
+        self.cell_component = cell_component
+
+    def __len__(self):
+        return len(self.new_df)
+
+    def __getitem__(self, idx):
+        # read the image
+        plate_num = self.new_df.loc[idx, "PlateNumber"]
+        treatment = self.new_df.loc[idx, "GEF_GAP_GTPase"]
+        plate = "Plate" + str(plate_num)
         if self.cell_component == "cell":
             component_path = "stacked_pointcloud"
         else:

@@ -47,3 +47,10 @@ class GraphAutoEncoder(nn.Module):
         features = self.encoder(x)
         output, _ = self.decoder(x=features)
         return output, features
+
+
+if __name__ == "__main__":
+    model = GraphAutoEncoder(128).cuda()
+    inp = torch.rand((1, 2048, 3)).cuda()
+    out = model(inp)
+    print(out[0].shape)

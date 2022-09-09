@@ -26,12 +26,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='DGCNN + Folding')
     parser.add_argument('--dataset_path', default='/home/mvries/Documents/Datasets/OPM/SingleCellFromNathan_17122021/', type=str)
     parser.add_argument('--dataframe_path',
-                        default='/home/mvries/Documents/Datasets/OPM/SingleCellFromNathan_17122021/all_cell_data.csv',
+                        default='/home/mvries/Documents/Datasets/OPM/SingleCellFromNathan_17122021/only_cool_cell.csv',
                         type=str)
     parser.add_argument('--output_path', default='./', type=str)
-    parser.add_argument('--num_epochs', default=250, type=int)
+    parser.add_argument('--num_epochs', default=1000, type=int)
     parser.add_argument('--fold_path',
-                        default='/run/user/1128299809/gvfs/smb-share:server=rds.icr.ac.uk,share=data/DBI/DUDBI/DYNCESYS/mvries/ResultsAlma/TearingNetNew/nets/dgcnn_foldingnet_128_008.pt',
+                        default='/home/mvries/Documents/GitHub/TearingNetNew/nets/dgcnn_foldingnet_128_014.pt',
                         type=str)
     parser.add_argument('--dgcnn_path',
                         default='/run/user/1128299809/gvfs/smb-share:server=rds.icr.ac.uk,share=data/DBI/DUDBI/DYNCESYS/mvries/Reconstruct_dgcnn_cls_k20_plane/models/shapenetcorev2_250.pkl',
@@ -49,7 +49,7 @@ if __name__ == "__main__":
                         default="foldingnet",
                         type=str)
     parser.add_argument('--learning_rate',
-                        default=0.00001,
+                        default=0.00005,
                         type=float)
     parser.add_argument('--batch_size',
                         default=16,
@@ -90,7 +90,7 @@ if __name__ == "__main__":
     # model.load_state_dict(model_dict)
     print(checkpoint['loss'])
 
-    dataset = GefGapAllAlignedPCA(df, root_dir)
+    dataset = PointCloudDatasetAll(df, root_dir)
 
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
