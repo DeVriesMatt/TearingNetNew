@@ -377,7 +377,8 @@ class PointCloudDatasetAllAlignedPCA(Dataset):
             transform=None,
             target_transform=None,
             cell_component="cell",
-            rotation_matrices=generate_24_rotations()
+            rotation_matrices=generate_24_rotations(),
+            proximal=2
     ):
         self.annot_df = pd.read_csv(annotations_file)
         self.img_dir = img_dir
@@ -386,13 +387,22 @@ class PointCloudDatasetAllAlignedPCA(Dataset):
         self.transform = transform
         self.target_transform = target_transform
         self.cell_component = cell_component
+        self.proximal = proximal
         self.rotation_matrices = rotation_matrices
 
-        self.new_df = self.annot_df[
-            (self.annot_df.xDim <= self.img_size)
-            & (self.annot_df.yDim <= self.img_size)
-            & (self.annot_df.zDim <= self.img_size)
-            ].reset_index(drop=True)
+        if self.proximal == 2:
+            self.new_df = self.annot_df[
+                (self.annot_df.xDim <= self.img_size)
+                & (self.annot_df.yDim <= self.img_size)
+                & (self.annot_df.zDim <= self.img_size)
+                ].reset_index(drop=True)
+        else:
+            self.new_df = self.annot_df[
+                (self.annot_df.xDim <= self.img_size)
+                & (self.annot_df.yDim <= self.img_size)
+                & (self.annot_df.zDim <= self.img_size)
+                & (self.annot_df.Proximal == self.proximal)
+                ].reset_index(drop=True)
 
         # encode label
         le = LabelEncoder()

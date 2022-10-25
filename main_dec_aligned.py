@@ -9,7 +9,8 @@ from dataset import PointCloudDatasetAllBoth, \
     PointCloudDatasetAllProximal,\
     PointCloudDatasetAllAligned, \
     PointCloudDatasetAllAlignedProximal,\
-    PointCloudDatasetAllAlignedDistal
+    PointCloudDatasetAllAlignedDistal, \
+    PointCloudDatasetAllAlignedPCA
 from autoencoder import GraphAutoEncoder
 from chamfer import ChamferLoss1
 import argparse
@@ -119,11 +120,11 @@ if __name__ == "__main__":
     # print(checkpoint['loss'])
 
     if proximal == 0:
-        dataset = PointCloudDatasetAllAlignedDistal(df, root_dir)
+        dataset = PointCloudDatasetAllAlignedPCA(df, root_dir)
     elif proximal == 1:
-        dataset = PointCloudDatasetAllAlignedProximal(df, root_dir)
+        dataset = PointCloudDatasetAllAlignedPCA(df, root_dir)
     else:
-        dataset = PointCloudDatasetAllAligned(df, root_dir)
+        dataset = PointCloudDatasetAllAlignedPCA(df, root_dir)
 
     # TODO: Imperative that shuffle=False
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
