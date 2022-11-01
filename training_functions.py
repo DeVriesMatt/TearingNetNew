@@ -38,7 +38,7 @@ def train(model, dataloader, num_epochs, criterion, optimizer, output_dir):
 
                 inputs = data[0]
                 inputs = inputs.to(device)
-                rotated_inputs = data[2]
+                # rotated_inputs = data[2]
                 # rotated_inputs = rotated_inputs.to(device)
 
                 batch_size = inputs.shape[0]

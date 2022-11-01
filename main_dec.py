@@ -7,7 +7,19 @@ from dataset import PointCloudDatasetAllBoth, \
     PointCloudDatasetAll, \
     PointCloudDatasetAllDistal, \
     PointCloudDatasetAllProximal, \
-    PointCloudDatasetAllBlebbNoc
+    PointCloudDatasetAllBlebbNoc, \
+    GefGapDataset
+
+from torch.utils.data import DataLoader
+import pytorch_lightning as pl
+from pytorch_lightning.callbacks import ModelCheckpoint
+import logging
+
+from cellshape_cloud.lightning_autoencoder import CloudAutoEncoderPL
+
+from cellshape_cloud.reports import get_experiment_name
+from cellshape_cloud.cloud_autoencoder import CloudAutoEncoder
+
 from autoencoder import GraphAutoEncoder
 from chamfer import ChamferLoss1
 import argparse
@@ -28,18 +40,21 @@ if __name__ == "__main__":
     # df = "/home/mvries/Documents/Datasets/OPM/SingleCellFromNathan_17122021/all_cell_data.csv"
     # root_dir = "/home/mvries/Documents/Datasets/OPM/SingleCellFromNathan_17122021/"
     parser = argparse.ArgumentParser(description='DGCNN + Folding + DEC')
-    parser.add_argument('--dataset_path', default='/home/mvries/Documents/Datasets/OPM/'
-                                                  'SingleCellFromNathan_17122021/', type=str)
+    parser.add_argument('--dataset_path',
+                        default="/home/mvries/Documents/Datasets/OPM/VickyPlates_010922/",
+                        type=str)
     parser.add_argument('--dataframe_path',
-                        default='/home/mvries/Documents/Datasets/OPM/SingleCellFromNathan_17122021/'
-                                'all_cell_data.csv',
+                        default="/home/mvries/Documents/Datasets/OPM/VickyCellshape/" 
+                                "cn_allFeatures_withGeneNames_updated_removedwrong.csv",
                         type=str)
     parser.add_argument('--output_path', default='./', type=str)
     parser.add_argument('--num_epochs', default=250, type=int)
     parser.add_argument('--fold_path',
-                        default='/run/user/1128299809/gvfs/smb-share:server=rds.icr.ac.uk,share=data/'
-                                'DBI/DUDBI/DYNCESYS/mvries/ResultsAlma/TearingNetNew/shapenet/nets/'
-                                'dgcnn_foldingnet_128_002.pt',
+                        default="/run/user/1128299809/gvfs/" 
+                                "smb-share:server=rds.icr.ac.uk,share=data/DBI/DUDBI/DYNCESYS/" 
+                                "mvries/ResultsAlma/cellshape-cloud/Vicky/" 
+                                "dgcnn_foldingnetbasic_128_pretrained_001/lightning_logs/version_10952234" 
+                                "/checkpoints/epoch=149-step=52950.ckpt",
                         type=str)
     parser.add_argument('--dgcnn_path',
                         default='/run/user/1128299809/gvfs/smb-share:server=rds.icr.ac.uk,share=data/'
@@ -68,7 +83,7 @@ if __name__ == "__main__":
                         default=None,
                         type=int)
     parser.add_argument('--proximal',
-                        default=0,
+                        default=3,
                         type=int)
     parser.add_argument('--gamma',
                         default=10,
@@ -79,6 +94,25 @@ if __name__ == "__main__":
     parser.add_argument('--update_interval',
                         default=5,
                         type=int)
+    parser.add_argument('--is_lightning',
+                        default=1,
+                        type=int)
+    parser.add_argument('--std',
+                        default=3.0,
+                        type=int)
+    parser.add_argument('--shape',
+                        default="plane",
+                        type=str)
+    parser.add_argument('--sphere_path',
+                        default="/home/mvries/Documents/GiHub/cellshape-cloud/cellshape_cloud/vendor/sphere.npy",
+                        type=str)
+    parser.add_argument('--gaussian_path',
+                        default="/home/mvries/Documents/GiHub/cellshape-cloud/cellshape_cloud/vendor/gaussian.npy",
+                        type=str)
+    parser.add_argument('--learning_rate_autoencoder',
+                        default=0.00001,
+                        type=float)
+
 
 
     args = parser.parse_args()
@@ -103,8 +137,45 @@ if __name__ == "__main__":
 
     checkpoint = torch.load(fold_path)
 
-    ae = GraphAutoEncoder(num_features=num_features, k=20, encoder_type=encoder_type, decoder_type=decoder_type)
-    ae.load_state_dict(checkpoint['model_state_dict'])
+    ae = GraphAutoEncoder(num_features=num_features,
+                          k=20,
+                          encoder_type=encoder_type,
+                          decoder_type=decoder_type)
+
+    if args.is_lightning:
+        model = CloudAutoEncoder(
+            num_features=num_features,
+            k=k,
+            encoder_type=encoder_type,
+            decoder_type="foldingnetbasic",
+            std=args.std,
+            shape=args.shape
+        )
+
+        autoencoder = CloudAutoEncoderPL(args=args, model=model).cuda()
+        autoencoder.load_state_dict(checkpoint['state_dict'])
+        model_sd = autoencoder.model.state_dict()
+        try:
+            ae.load_state_dict(model_sd)
+        except Exception as e:
+            print(e)
+            print("Trying to load model another way")
+        try:
+            model_dict = ae.state_dict()  # load parameters from pre-trained FoldingNet
+            for k in checkpoint['state_dict']:
+                if k in model_dict:
+                    model_dict[k] = checkpoint['state_dict'][k]
+                    print("    Found weight: " + k)
+                elif k.replace('folding.folding', 'folding') in model_dict:
+                    model_dict[k.replace('folding.folding', 'folding')] = checkpoint['state_dict'][k]
+                    print("    Found weight: " + k)
+            ae.load_state_dict(model_dict)
+        except Exception as e:
+            print(e)
+
+
+    else:
+        ae.load_state_dict(checkpoint['model_state_dict'])
     # model_dict = ae.state_dict()  # load parameters from pre-trained FoldingNet
     # for k in checkpoint['model_state_dict']:
     #     if k in model_dict:
@@ -123,7 +194,7 @@ if __name__ == "__main__":
     elif proximal == 2:
         dataset = PointCloudDatasetAll(df, root_dir)
     else:
-        dataset = PointCloudDatasetAllBlebbNoc(df, root_dir)
+        dataset = GefGapDataset(df, root_dir)
 
     # TODO: Imperative that shuffle=False
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)

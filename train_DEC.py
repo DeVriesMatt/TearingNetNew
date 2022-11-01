@@ -242,6 +242,7 @@ def calculate_q_distribution(model, dataloader_ind, device):
     :param device:
     :return:
     """
+    print("Calculating the q distribution")
     q_distribution_all = []
     model.eval()
     with tqdm(dataloader_ind, unit="data") as tepoch:

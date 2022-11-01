@@ -5,7 +5,8 @@ from encoders.dgcnn import ChamferLoss
 from dataset import PointCloudDatasetAllBoth,\
     PointCloudDatasetAllRotation,\
     PointCloudDatasetAll, \
-    GefGapAllAlignedPCA
+    GefGapAllAlignedPCA, \
+    ModelNet40
 from autoencoder import GraphAutoEncoder
 from chamfer import ChamferLoss1
 import argparse
@@ -24,17 +25,26 @@ if __name__ == "__main__":
     # df = "/home/mvries/Documents/Datasets/OPM/SingleCellFromNathan_17122021/all_cell_data.csv"
     # root_dir = "/home/mvries/Documents/Datasets/OPM/SingleCellFromNathan_17122021/"
     parser = argparse.ArgumentParser(description='DGCNN + Folding')
-    parser.add_argument('--dataset_path', default='/home/mvries/Documents/Datasets/OPM/SingleCellFromNathan_17122021/', type=str)
+    parser.add_argument('--dataset_path',
+                        default='/run/user/1128299809/gvfs/smb-share:server=rds.icr'
+                                '.ac.uk,share=data/DBI/DUDBI/DYNCESYS/mvries/'
+                                'Datasets/ModelNet40/PoitntCloud_2048/',
+                        type=str)
     parser.add_argument('--dataframe_path',
-                        default='/home/mvries/Documents/Datasets/OPM/SingleCellFromNathan_17122021/only_cool_cell.csv',
+                        default='/home/mvries/Documents/Datasets/OPM/SingleCellFromNathan'
+                                '_17122021/only_cool_cell.csv',
                         type=str)
     parser.add_argument('--output_path', default='./', type=str)
     parser.add_argument('--num_epochs', default=1000, type=int)
     parser.add_argument('--fold_path',
-                        default='/home/mvries/Documents/GitHub/TearingNetNew/nets/dgcnn_foldingnet_128_014.pt',
+                        default='/home/mvries/Documents/GitHub/TearingNetNew/nets'
+                                '/dgcnn_foldingnet_128_014.pt',
                         type=str)
     parser.add_argument('--dgcnn_path',
-                        default='/run/user/1128299809/gvfs/smb-share:server=rds.icr.ac.uk,share=data/DBI/DUDBI/DYNCESYS/mvries/Reconstruct_dgcnn_cls_k20_plane/models/shapenetcorev2_250.pkl',
+                        default='/run/user/1128299809/gvfs/smb-share:server=rds.icr.ac.uk,'
+                                'share=data/DBI/DUDBI/DYNCESYS'
+                                '/mvries/Reconstruct_dgcnn_cls_k20_plane/models/'
+                                'shapenetcorev2_250.pkl',
                         type=str)
     parser.add_argument('--num_features',
                         default=128,
@@ -60,7 +70,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     df = args.dataframe_path
-    root_dir = args.dataset_path
+    dataset_path = args.dataset_path
     output_path = args.output_path
     num_epochs = args.num_epochs
     fold_path = args.fold_path
@@ -72,7 +82,6 @@ if __name__ == "__main__":
     decoder_type = args.decoder_type
     learning_rate = args.learning_rate
     batch_size = args.batch_size
-
 
     model = GraphAutoEncoder(num_features=num_features, k=20, encoder_type=encoder_type, decoder_type=decoder_type)
     # model.load_state_dict(checkpoint['model_state_dict'])
@@ -89,9 +98,7 @@ if __name__ == "__main__":
     #         print("    Found weight: " + k)
     # model.load_state_dict(model_dict)
     print(checkpoint['loss'])
-
-    dataset = PointCloudDatasetAll(df, root_dir)
-
+    dataset = ModelNet40(dataset_path)
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
     criterion = ChamferLoss()
