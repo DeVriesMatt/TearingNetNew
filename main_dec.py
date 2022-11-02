@@ -8,7 +8,8 @@ from dataset import PointCloudDatasetAllBoth, \
     PointCloudDatasetAllDistal, \
     PointCloudDatasetAllProximal, \
     PointCloudDatasetAllBlebbNoc, \
-    GefGapDataset
+    GefGapDataset, \
+    ShapeNetDataset
 
 from torch.utils.data import DataLoader
 import pytorch_lightning as pl
@@ -41,7 +42,7 @@ if __name__ == "__main__":
     # root_dir = "/home/mvries/Documents/Datasets/OPM/SingleCellFromNathan_17122021/"
     parser = argparse.ArgumentParser(description='DGCNN + Folding + DEC')
     parser.add_argument('--dataset_path',
-                        default="/home/mvries/Documents/Datasets/OPM/VickyPlates_010922/",
+                        default="/home/mvries/Documents/Datasets/",
                         type=str)
     parser.add_argument('--dataframe_path',
                         default="/home/mvries/Documents/Datasets/OPM/VickyCellshape/" 
@@ -50,11 +51,11 @@ if __name__ == "__main__":
     parser.add_argument('--output_path', default='./', type=str)
     parser.add_argument('--num_epochs', default=250, type=int)
     parser.add_argument('--fold_path',
-                        default="/run/user/1128299809/gvfs/" 
-                                "smb-share:server=rds.icr.ac.uk,share=data/DBI/DUDBI/DYNCESYS/" 
-                                "mvries/ResultsAlma/cellshape-cloud/Vicky/" 
-                                "dgcnn_foldingnetbasic_128_pretrained_001/lightning_logs/version_10952234" 
-                                "/checkpoints/epoch=149-step=52950.ckpt",
+                        default="/run/user/1128299809/gvfs/smb-share:server=rds.icr.ac.uk,"
+                                "share=data/DBI/DUDBI/DYNCESYS/mvries/ResultsAlma"
+                                "/cellshape-cloud/ShapeNet/dgcnn_foldingnet_128_pretrained_001/l"
+                                "ightning_logs/version_10963689/"
+                                "checkpoints/last.ckpt",
                         type=str)
     parser.add_argument('--dgcnn_path',
                         default='/run/user/1128299809/gvfs/smb-share:server=rds.icr.ac.uk,share=data/'
@@ -80,10 +81,10 @@ if __name__ == "__main__":
                         default=16,
                         type=int)
     parser.add_argument('--num_clusters',
-                        default=None,
+                        default=40,
                         type=int)
     parser.add_argument('--proximal',
-                        default=3,
+                        default=4,
                         type=int)
     parser.add_argument('--gamma',
                         default=10,
@@ -98,16 +99,16 @@ if __name__ == "__main__":
                         default=1,
                         type=int)
     parser.add_argument('--std',
-                        default=3.0,
+                        default=0.3,
                         type=int)
     parser.add_argument('--shape',
-                        default="plane",
+                        default="sphere",
                         type=str)
     parser.add_argument('--sphere_path',
-                        default="/home/mvries/Documents/GiHub/cellshape-cloud/cellshape_cloud/vendor/sphere.npy",
+                        default="/home/mvries/Documents/GitHub/cellshape-cloud/cellshape_cloud/vendor/sphere.npy",
                         type=str)
     parser.add_argument('--gaussian_path',
-                        default="/home/mvries/Documents/GiHub/cellshape-cloud/cellshape_cloud/vendor/gaussian.npy",
+                        default="/home/mvries/Documents/GitHub/cellshape-cloud/cellshape_cloud/vendor/gaussian.npy",
                         type=str)
     parser.add_argument('--learning_rate_autoencoder',
                         default=0.00001,
@@ -149,32 +150,63 @@ if __name__ == "__main__":
             encoder_type=encoder_type,
             decoder_type="foldingnetbasic",
             std=args.std,
-            shape=args.shape
+            shape=args.shape,
+            sphere_path=args.sphere_path
         )
 
         autoencoder = CloudAutoEncoderPL(args=args, model=model).cuda()
         autoencoder.load_state_dict(checkpoint['state_dict'])
         model_sd = autoencoder.model.state_dict()
+        # try:
+        #     ae.load_state_dict(model_sd)
+        # except Exception as e:
+        #     print(e)
+        #     print("Trying to load model another way")
         try:
-            ae.load_state_dict(model_sd)
-        except Exception as e:
-            print(e)
-            print("Trying to load model another way")
-        try:
+            print("Trying to load Model")
             model_dict = ae.state_dict()  # load parameters from pre-trained FoldingNet
+            print(model_dict.keys())
+            print(checkpoint['state_dict'].keys())
             for k in checkpoint['state_dict']:
                 if k in model_dict:
                     model_dict[k] = checkpoint['state_dict'][k]
                     print("    Found weight: " + k)
-                elif k.replace('folding.folding', 'folding') in model_dict:
-                    model_dict[k.replace('folding.folding', 'folding')] = checkpoint['state_dict'][k]
+                elif k.replace('model.decoder', 'decoder.folding') in model_dict:
+                    model_dict[k.replace('model.decoder', 'decoder.folding')] = checkpoint['state_dict'][k]
+                    print("    Found weight: " + k)
+                elif k.replace('model.', '') in model_dict:
+                    model_dict[k.replace('model.', '')] = checkpoint['state_dict'][k]
                     print("    Found weight: " + k)
             ae.load_state_dict(model_dict)
+
         except Exception as e:
+            print("there was an error")
+            print(e)
+
+        try:
+            print("Trying again to load Model")
+            model_dict = ae.state_dict()  # load parameters from pre-trained FoldingNet
+            print(model_dict.keys())
+            print(checkpoint['state_dict'].keys())
+            for k in checkpoint['state_dict']:
+                if k in model_dict:
+                    model_dict[k] = checkpoint['state_dict'][k]
+                    print("    Found weight: " + k)
+                elif k.replace('model.decoder', 'model.decoder.folding') in model_dict:
+                    model_dict[k.replace('model.decoder', 'model.decoder.folding')] = checkpoint['state_dict'][k]
+                    print("    Found weight: " + k)
+                elif k.replace('model.', '') in model_dict:
+                    model_dict[k.replace('model.', '')] = checkpoint['state_dict'][k]
+                    print("    Found weight: " + k)
+            ae.load_state_dict(model_dict)
+
+        except Exception as e:
+            print("there was a new error")
             print(e)
 
 
     else:
+        print("not a lightning model")
         ae.load_state_dict(checkpoint['model_state_dict'])
     # model_dict = ae.state_dict()  # load parameters from pre-trained FoldingNet
     # for k in checkpoint['model_state_dict']:
@@ -193,8 +225,16 @@ if __name__ == "__main__":
         dataset = PointCloudDatasetAllProximal(df, root_dir)
     elif proximal == 2:
         dataset = PointCloudDatasetAll(df, root_dir)
-    else:
+    elif proximal == 3:
         dataset = GefGapDataset(df, root_dir)
+    else:
+        dataset = ShapeNetDataset(
+            root=args.dataset_path,
+            dataset_name="modelnet40",
+            random_rotate=False,
+            random_jitter=False,
+            random_translate=False
+        )
 
     # TODO: Imperative that shuffle=False
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
