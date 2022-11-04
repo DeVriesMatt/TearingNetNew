@@ -25,7 +25,8 @@ def train_DEC_func(autoencoder,
                    learning_rate,
                    batch_size,
                    proximal,
-                   num_clusters):
+                   num_clusters,
+                   args):
     """
     Training for deep embedded clustering.
     Step 1: Initialise cluster centres
@@ -52,8 +53,11 @@ def train_DEC_func(autoencoder,
         prox = 'Proximal'
     elif proximal == 2:
         prox = 'All'
+    elif proximal == 3:
+        prox = 'GEFGAP'
     else:
-        prox = 'BlebbNoc'
+        prox = "ModelNet"
+
     autoencoder.decoder_type = autoencoder.decoder_type + "DEC" + prox + f"clusters{num_clusters}"
     name_logging, name_model, name_writer, name = get_experiment_name(
         model=autoencoder, output_dir=output_dir
@@ -61,6 +65,8 @@ def train_DEC_func(autoencoder,
     now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     logging.basicConfig(filename=name_logging, level=logging.INFO)
     logging.info(f"Started training model {name} at {now}.")
+    for arg in vars(args):
+        logging.info(arg + ": " + str(getattr(args, arg)))
 
     logging.info(f"Training on {prox} data with number of clusters set to {num_clusters}")
     writer = SummaryWriter(log_dir=name_writer)
@@ -175,6 +181,16 @@ def train_DEC_func(autoencoder,
                 best_loss = total_loss
                 torch.save(checkpoint, name_model)
                 logging.info(f"Saving model to {name_model} with loss = {best_loss}.")
+            checkpoint = {
+                "model_state_dict": model.state_dict(),
+                "optimizer_state_dict": optimizer.state_dict(),
+                "epoch": epoch,
+                "loss": total_loss,
+            }
+            best_loss = total_loss
+            name_model_last = name_model.replace(".pt", "_last.pt")
+            torch.save(checkpoint, name_model_last)
+            logging.info(f"Saving model to {name_model_last} with loss = {best_loss}.")
 
         # scheduler.step()
     checkpoint = {
@@ -224,7 +240,8 @@ def initialise_cluster_centres(autoencoder, dataloader_ind, device, num_clusters
         number_clusters = kl.elbow
     else:
         number_clusters = num_clusters
-    # logging.info(f"Optimal number of cluster: {number_clusters}")
+
+    logging.info(f"Optimal number of cluster: {number_clusters}")
     kmeans = KMeans(n_clusters=number_clusters, random_state=0).fit(features_np)
     weights = torch.from_numpy(kmeans.cluster_centers_)
     model = DEC(autoencoder=autoencoder, num_clusters=number_clusters)

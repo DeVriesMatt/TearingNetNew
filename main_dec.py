@@ -42,7 +42,7 @@ if __name__ == "__main__":
     # root_dir = "/home/mvries/Documents/Datasets/OPM/SingleCellFromNathan_17122021/"
     parser = argparse.ArgumentParser(description='DGCNN + Folding + DEC')
     parser.add_argument('--dataset_path',
-                        default="/home/mvries/Documents/Datasets/",
+                        default="/home/mvries/Documents/Datasets/OPM/VickyPlates_010922",
                         type=str)
     parser.add_argument('--dataframe_path',
                         default="/home/mvries/Documents/Datasets/OPM/VickyCellshape/" 
@@ -51,11 +51,12 @@ if __name__ == "__main__":
     parser.add_argument('--output_path', default='./', type=str)
     parser.add_argument('--num_epochs', default=250, type=int)
     parser.add_argument('--fold_path',
-                        default="/run/user/1128299809/gvfs/smb-share:server=rds.icr.ac.uk,"
-                                "share=data/DBI/DUDBI/DYNCESYS/mvries/ResultsAlma"
-                                "/cellshape-cloud/ShapeNet/dgcnn_foldingnet_128_pretrained_001/l"
-                                "ightning_logs/version_10963689/"
-                                "checkpoints/last.ckpt",
+                        default="/run/user/1128299809/gvfs/smb-share:server=rds"
+                                ".icr.ac.uk,share=data/DBI/DUDBI/DYNCESYS/"
+                                "mvries/ResultsAlma/cellshape-cloud/Vicky/"
+                                "dgcnn_foldingnetbasic_128_pretrained_001/"
+                                "lightning_logs/version_10952234/checkpoints/"
+                                "epoch=149-step=52950.ckpt",
                         type=str)
     parser.add_argument('--dgcnn_path',
                         default='/run/user/1128299809/gvfs/smb-share:server=rds.icr.ac.uk,share=data/'
@@ -81,10 +82,10 @@ if __name__ == "__main__":
                         default=16,
                         type=int)
     parser.add_argument('--num_clusters',
-                        default=40,
+                        default=None,
                         type=int)
     parser.add_argument('--proximal',
-                        default=4,
+                        default=3,
                         type=int)
     parser.add_argument('--gamma',
                         default=10,
@@ -99,22 +100,20 @@ if __name__ == "__main__":
                         default=1,
                         type=int)
     parser.add_argument('--std',
-                        default=0.3,
+                        default=3.0,
                         type=int)
     parser.add_argument('--shape',
-                        default="sphere",
+                        default="plane",
                         type=str)
     parser.add_argument('--sphere_path',
-                        default="/home/mvries/Documents/GitHub/cellshape-cloud/cellshape_cloud/vendor/sphere.npy",
+                        default="/home/mvries/Documents/GiHub/cellshape-cloud/cellshape_cloud/vendor/sphere.npy",
                         type=str)
     parser.add_argument('--gaussian_path',
-                        default="/home/mvries/Documents/GitHub/cellshape-cloud/cellshape_cloud/vendor/gaussian.npy",
+                        default="/home/mvries/Documents/GiHub/cellshape-cloud/cellshape_cloud/vendor/gaussian.npy",
                         type=str)
     parser.add_argument('--learning_rate_autoencoder',
                         default=0.00001,
                         type=float)
-
-
 
     args = parser.parse_args()
     df = args.dataframe_path
@@ -150,8 +149,7 @@ if __name__ == "__main__":
             encoder_type=encoder_type,
             decoder_type="foldingnetbasic",
             std=args.std,
-            shape=args.shape,
-            sphere_path=args.sphere_path
+            shape=args.shape
         )
 
         autoencoder = CloudAutoEncoderPL(args=args, model=model).cuda()
@@ -182,27 +180,28 @@ if __name__ == "__main__":
         except Exception as e:
             print("there was an error")
             print(e)
+            try:
+                print("Trying again to load Model")
+                model_dict = ae.state_dict()  # load parameters from pre-trained FoldingNet
+                print(model_dict.keys())
+                print(checkpoint['state_dict'].keys())
+                for k in checkpoint['state_dict']:
+                    if k in model_dict:
+                        model_dict[k] = checkpoint['state_dict'][k]
+                        print("    Found weight: " + k)
+                    elif k.replace('model.decoder', 'model.decoder.folding') in model_dict:
+                        model_dict[k.replace('model.decoder', 'model.decoder.folding')] = checkpoint['state_dict'][k]
+                        print("    Found weight: " + k)
+                    elif k.replace('model.', '') in model_dict:
+                        model_dict[k.replace('model.', '')] = checkpoint['state_dict'][k]
+                        print("    Found weight: " + k)
+                ae.load_state_dict(model_dict)
 
-        try:
-            print("Trying again to load Model")
-            model_dict = ae.state_dict()  # load parameters from pre-trained FoldingNet
-            print(model_dict.keys())
-            print(checkpoint['state_dict'].keys())
-            for k in checkpoint['state_dict']:
-                if k in model_dict:
-                    model_dict[k] = checkpoint['state_dict'][k]
-                    print("    Found weight: " + k)
-                elif k.replace('model.decoder', 'model.decoder.folding') in model_dict:
-                    model_dict[k.replace('model.decoder', 'model.decoder.folding')] = checkpoint['state_dict'][k]
-                    print("    Found weight: " + k)
-                elif k.replace('model.', '') in model_dict:
-                    model_dict[k.replace('model.', '')] = checkpoint['state_dict'][k]
-                    print("    Found weight: " + k)
-            ae.load_state_dict(model_dict)
+            except Exception as e:
+                print("there was a new error")
+                print(e)
 
-        except Exception as e:
-            print("there was a new error")
-            print(e)
+
 
 
     else:
@@ -256,7 +255,8 @@ if __name__ == "__main__":
                    learning_rate=learning_rate,
                    batch_size=batch_size,
                    proximal=proximal,
-                   num_clusters=num_clusters)
+                   num_clusters=num_clusters,
+                   args=args)
 
 
 
