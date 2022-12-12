@@ -265,7 +265,7 @@ if __name__ == "__main__":
     elif proximal == 4:
         dataset = OPMDataset(
             args.dataframe_path,
-            args.cloud_dataset_path,
+            root_dir,
             norm_std=args.norm_std,
             cell_component=args.cell_component,
             single_path=args.single_path,
