@@ -34,6 +34,16 @@ def create_dir_if_not_exist(path):
     if not os.path.exists(path):
         os.makedirs(path)
 
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ("yes", "true", "t", "y", "1"):
+        return True
+    elif v.lower() in ("no", "false", "f", "n", "0"):
+        return False
+    else:
+        raise argparse.ArgumentTypeError("Boolean value expected.")
+
 
 if __name__ == "__main__":
     # PATH_TO_DATASET = (
@@ -45,6 +55,12 @@ if __name__ == "__main__":
     parser.add_argument('--dataset_path',
                         default="/home/mvries/Documents/Datasets/OPM/VickyPlates_010922",
                         type=str)
+    parser.add_argument(
+        "--cell_component",
+        default="cell",
+        type=str,
+        help="Enter the number of points in the point cloud",
+    )
     parser.add_argument('--dataframe_path',
                         default="/home/mvries/Documents/Datasets/OPM/VickyCellshape/" 
                                 "cn_allFeatures_withGeneNames_updated_removedwrong.csv",
@@ -126,6 +142,12 @@ if __name__ == "__main__":
         default="./",
         type=str,
         help="Standard deviation of sampled points.",
+    )
+    parser.add_argument(
+        "--norm_std",
+        default=True,
+        type=str2bool,
+        help="Standardize by a factor of 20?",
     )
 
 

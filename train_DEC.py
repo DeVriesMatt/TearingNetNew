@@ -55,6 +55,8 @@ def train_DEC_func(autoencoder,
         prox = 'All'
     elif proximal == 3:
         prox = 'GEFGAP'
+    elif proximal == 4:
+        prox = 'All_OPM'
     else:
         prox = "ModelNet"
 
