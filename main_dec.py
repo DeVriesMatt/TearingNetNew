@@ -9,7 +9,8 @@ from dataset import PointCloudDatasetAllBoth, \
     PointCloudDatasetAllProximal, \
     PointCloudDatasetAllBlebbNoc, \
     GefGapDataset, \
-    ShapeNetDataset
+    ShapeNetDataset, \
+    OPMDataset
 
 from torch.utils.data import DataLoader
 import pytorch_lightning as pl
@@ -114,6 +115,19 @@ if __name__ == "__main__":
     parser.add_argument('--learning_rate_autoencoder',
                         default=0.00001,
                         type=float)
+    parser.add_argument(
+        "--single_path",
+        default="./",
+        type=str,
+        help="Standard deviation of sampled points.",
+    )
+    parser.add_argument(
+        "--gef_path",
+        default="./",
+        type=str,
+        help="Standard deviation of sampled points.",
+    )
+
 
     args = parser.parse_args()
     df = args.dataframe_path
@@ -226,6 +240,15 @@ if __name__ == "__main__":
         dataset = PointCloudDatasetAll(df, root_dir)
     elif proximal == 3:
         dataset = GefGapDataset(df, root_dir)
+    elif proximal == 4:
+        dataset = OPMDataset(
+            args.dataframe_path,
+            args.cloud_dataset_path,
+            norm_std=args.norm_std,
+            cell_component=args.cell_component,
+            single_path=args.single_path,
+            gef_path=args.gef_path,
+        )
     else:
         dataset = ShapeNetDataset(
             root=args.dataset_path,
